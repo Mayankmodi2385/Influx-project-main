@@ -1,0 +1,27 @@
+{
+  "name": "influx-monorepo",
+  "version": "1.0.0",
+  "description": "InFlux EV Charging Station Locator - Full Stack Application",
+  "private": true,
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "seed": "cd backend && npm run seed",
+    "test": "cd backend && npm test && cd ../frontend && npm test",
+    "lint": "cd backend && npm run lint && cd ../frontend && npm run lint"
+  },
+  "keywords": ["ev", "charging", "stations", "full-stack"],
+  "author": "",
+  "license": "ISC"
+}
+
+
+
+
+
+
+
+
+
+
+

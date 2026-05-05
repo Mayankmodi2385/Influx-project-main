@@ -1,0 +1,17 @@
+{
+  "watch": ["src"],
+  "ext": "js",
+  "ignore": ["node_modules", "tests", "uploads"],
+  "exec": "node src/index.js"
+}
+
+
+
+
+
+
+
+
+
+
+
