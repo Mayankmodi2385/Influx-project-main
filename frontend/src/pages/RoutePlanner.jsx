@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
-import { routeService } from '../services/routeService';
+import React, { useState, useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import api from '../services/api';
+import { routeService } from '../services/routeService';
 import { useAuth } from '../context/AuthContext';
-import { FaRoute, FaBolt, FaClock, FaRupeeSign, FaFilter, FaCar, FaChargingStation } from 'react-icons/fa';
+import { FaRoute, FaBolt, FaClock, FaRupeeSign, FaFilter, FaCar, FaChargingStation, FaSearch } from 'react-icons/fa';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Fix for default marker icon (Leaflet CDN)
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
@@ -17,118 +16,225 @@ L.Icon.Default.mergeOptions({
 
 const createChargingIcon = () =>
   L.divIcon({
-    className: 'custom-charging-icon',
-    html: `<div style="background-color:#10b981;width:28px;height:28px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;"><span style="color:white;font-size:14px;">⚡</span></div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
+    className: '',
+    html: `<div style="background:#10b981;width:28px;height:28px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3)"><span style="color:white;font-size:14px;">⚡</span></div>`,
+    iconSize: [28, 28], iconAnchor: [14, 14],
   });
 
-// ── Range Bar Component ──────────────────────────────────────────────────────
+const createStopIcon = (num) =>
+  L.divIcon({
+    className: '',
+    html: `<div style="background:#f59e0b;width:30px;height:30px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#1f2937;font-size:13px;box-shadow:0 2px 6px rgba(0,0,0,0.3)">${num}</div>`,
+    iconSize: [30, 30], iconAnchor: [15, 15],
+  });
+
+// ── Map auto-fit component ───────────────────────────────────────────────────
+const FitBounds = ({ coords }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (coords && coords.length > 1) {
+      const bounds = L.latLngBounds(coords.map(c => [c[1], c[0]]));
+      map.fitBounds(bounds, { padding: [40, 40] });
+    }
+  }, [coords]);
+  return null;
+};
+
+// ── Geocode using Nominatim (free, no API key) ──────────────────────────────
+const geocodeWithNominatim = async (address) => {
+  try {
+    const query = encodeURIComponent(address + ', India');
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`,
+      { headers: { 'Accept-Language': 'en', 'User-Agent': 'InFlux-EV-App' } }
+    );
+    const data = await res.json();
+    if (data && data.length > 0) {
+      return [parseFloat(data[0].lon), parseFloat(data[0].lat)];
+    }
+    return null;
+  } catch (e) {
+    console.warn('Nominatim error:', e.message);
+    return null;
+  }
+};
+
+// ── Get real road route using OSRM (free, no API key) ──────────────────────
+const getRoadRoute = async (startCoords, endCoords) => {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${startCoords[0]},${startCoords[1]};${endCoords[0]},${endCoords[1]}?overview=full&geometries=geojson`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+      const route = data.routes[0];
+      return {
+        coordinates: route.geometry.coordinates, // [[lng,lat],...]
+        distanceKm: route.distance / 1000,
+        durationSecs: route.duration,
+      };
+    }
+    return null;
+  } catch (e) {
+    console.warn('OSRM error:', e.message);
+    return null;
+  }
+};
+
+// ── Haversine distance ───────────────────────────────────────────────────────
+const haversineKm = (a, b) => {
+  const R = 6371;
+  const dLat = ((b[1] - a[1]) * Math.PI) / 180;
+  const dLon = ((b[0] - a[0]) * Math.PI) / 180;
+  const x = Math.sin(dLat/2)**2 + Math.cos(a[1]*Math.PI/180)*Math.cos(b[1]*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+};
+
+// ── Estimate charging stops from vehicle + distance ─────────────────────────
+const estimateStopsLocal = (distanceKm, vehicle) => {
+  const stops = [];
+  const effectiveRange = vehicle.range * (vehicle.currentChargePercent / 100);
+  if (distanceKm <= effectiveRange) return stops;
+
+  let remaining = distanceKm - effectiveRange;
+  let fromStart = effectiveRange;
+  const perStop = vehicle.range * 0.8;
+  let num = 1;
+  while (remaining > 0) {
+    stops.push({ num, distanceFromStart: Math.round(fromStart), kmNeeded: Math.min(remaining, perStop) });
+    fromStart += perStop;
+    remaining -= perStop;
+    num++;
+  }
+  return stops;
+};
+
+// ── Range Bar ───────────────────────────────────────────────────────────────
 const RangeBar = ({ vehicle, distanceKm }) => {
   if (!vehicle || !distanceKm) return null;
-
-  const effectiveRangeKm = vehicle.range * (vehicle.currentChargePercent / 100);
-  const totalDistance = distanceKm;
-  const numSegments = Math.ceil(totalDistance / (vehicle.range * 0.8));
-  const stops = [];
-
-  let covered = effectiveRangeKm;
-  let stopNum = 1;
-  while (covered < totalDistance) {
-    stops.push({ at: covered, num: stopNum++ });
-    covered += vehicle.range * 0.8;
-  }
-
+  const effectiveRange = vehicle.range * (vehicle.currentChargePercent / 100);
+  const stops = estimateStopsLocal(distanceKm, vehicle);
   return (
-    <div className="bg-white rounded-lg shadow p-4 mb-4">
+    <div className="bg-white rounded-lg shadow p-4 mb-4 border border-gray-100">
       <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
         <FaCar className="text-green-600" /> Range Analysis
       </h3>
-      <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-        <span>0 km</span>
-        <span>{totalDistance.toFixed(0)} km</span>
+      <div className="flex justify-between text-xs text-gray-500 mb-1">
+        <span>0 km</span><span>{distanceKm.toFixed(0)} km</span>
       </div>
-      <div className="relative h-6 bg-gray-200 rounded-full overflow-visible mb-2">
-        {/* First segment — current charge */}
-        <div
-          className="absolute h-full bg-green-500 rounded-l-full"
-          style={{ width: `${Math.min(100, (effectiveRangeKm / totalDistance) * 100)}%` }}
-        />
-        {/* Subsequent segments */}
-        {stops.map((stop, i) => {
-          const segEnd = Math.min(stop.at + vehicle.range * 0.8, totalDistance);
-          const left = (stop.at / totalDistance) * 100;
-          const width = ((segEnd - stop.at) / totalDistance) * 100;
+      <div className="relative h-7 bg-gray-200 rounded-full overflow-visible mb-3">
+        <div className="absolute h-full bg-green-500 rounded-l-full transition-all"
+          style={{ width: `${Math.min(100, (effectiveRange / distanceKm) * 100)}%` }} />
+        {stops.map((s, i) => {
+          const left = (s.distanceFromStart / distanceKm) * 100;
+          const segEnd = Math.min(s.distanceFromStart + vehicle.range * 0.8, distanceKm);
+          const w = ((segEnd - s.distanceFromStart) / distanceKm) * 100;
           return (
-            <div
-              key={i}
-              className="absolute h-full bg-blue-400 opacity-70"
-              style={{ left: `${left}%`, width: `${Math.min(width, 100 - left)}%` }}
-            />
+            <React.Fragment key={i}>
+              <div className="absolute h-full bg-blue-400 opacity-60"
+                style={{ left: `${Math.min(left, 99)}%`, width: `${Math.min(w, 100 - left)}%` }} />
+              <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10"
+                style={{ left: `${Math.min(99, left)}%` }}>
+                <div className="w-6 h-6 bg-yellow-400 border-2 border-white rounded-full flex items-center justify-center text-xs font-bold text-gray-800 shadow">
+                  {s.num}
+                </div>
+              </div>
+            </React.Fragment>
           );
         })}
-        {/* Stop markers */}
-        {stops.map((stop, i) => (
-          <div
-            key={i}
-            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10"
-            style={{ left: `${Math.min(99, (stop.at / totalDistance) * 100)}%` }}
-          >
-            <div className="w-5 h-5 bg-yellow-400 border-2 border-white rounded-full flex items-center justify-center shadow">
-              <span className="text-xs font-bold text-gray-800">{stop.num}</span>
-            </div>
-          </div>
-        ))}
-        {/* Destination marker */}
         <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-red-500 border-2 border-white rounded-full shadow" />
       </div>
-      <div className="flex flex-wrap gap-3 text-xs mt-2">
-        <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-500 rounded inline-block" /> Current charge: {effectiveRangeKm.toFixed(0)} km</span>
+      <div className="flex flex-wrap gap-3 text-xs">
+        <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-500 rounded inline-block" /> Current charge: {effectiveRange.toFixed(0)} km</span>
         {stops.length > 0 && <span className="flex items-center gap-1"><span className="w-3 h-3 bg-blue-400 rounded inline-block" /> After charging (80%): {(vehicle.range * 0.8).toFixed(0)} km</span>}
-        <span className="flex items-center gap-1"><span className="w-3 h-3 bg-yellow-400 rounded-full inline-block border border-gray-300" /> Charging stop needed</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 bg-yellow-400 rounded-full inline-block border border-gray-300" /> Charging stop</span>
       </div>
-      {stops.length === 0 ? (
-        <p className="text-green-600 text-xs font-medium mt-2">✅ Your current charge is enough to reach the destination!</p>
-      ) : (
-        <p className="text-orange-600 text-xs font-medium mt-2">⚡ {stops.length} charging stop{stops.length > 1 ? 's' : ''} needed along the way</p>
-      )}
+      {stops.length === 0
+        ? <p className="text-green-600 text-xs font-medium mt-2">✅ Your current charge is enough for this trip!</p>
+        : <p className="text-orange-600 text-xs font-medium mt-2">⚡ {stops.length} charging stop{stops.length > 1 ? 's' : ''} needed</p>}
     </div>
   );
 };
 
-// ── Stop Card Component ──────────────────────────────────────────────────────
+// ── Stop Card ───────────────────────────────────────────────────────────────
 const StopCard = ({ stop, index }) => (
   <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
     <div className="flex items-center gap-2 mb-2">
-      <div className="w-7 h-7 bg-yellow-400 rounded-full flex items-center justify-center font-bold text-gray-800 text-sm">
+      <div className="w-7 h-7 bg-yellow-400 rounded-full flex items-center justify-center font-bold text-gray-800 text-sm shrink-0">
         {index + 1}
       </div>
       <div>
-        <p className="text-sm font-semibold text-gray-800">
-          {stop.station ? stop.station.name : 'Charging Stop Required'}
-        </p>
-        <p className="text-xs text-gray-500">
-          At {stop.distanceFromStart?.toFixed(1)} km from start
-        </p>
+        <p className="text-sm font-semibold text-gray-800">{stop.station ? stop.station.name : 'Charging Stop Required'}</p>
+        <p className="text-xs text-gray-500">At {stop.distanceFromStart} km from start</p>
       </div>
     </div>
     {stop.station ? (
-      <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mt-2">
+      <div className="grid grid-cols-2 gap-1 text-xs text-gray-600 mt-2">
         <span>📍 {stop.station.address || 'Along route'}</span>
-        <span>⚡ {stop.station.powerRating || 50} kW charger</span>
-        <span>🕐 ~{stop.chargeTimeMinutes} min charge</span>
+        <span>⚡ {stop.station.powerRating || 50} kW</span>
+        <span>🕐 ~{stop.chargeTimeMinutes} min</span>
         <span>💰 ₹{stop.costRupees || 0}</span>
       </div>
     ) : (
-      <p className="text-xs text-orange-600 mt-1">
-        No station found nearby. Add charging stations in this area for better route planning.
-      </p>
+      <p className="text-xs text-orange-600 mt-1">No station in database near this point yet.</p>
     )}
     <div className="mt-2 bg-yellow-100 rounded p-2 text-xs text-gray-700">
-      Charge to <strong>80%</strong> here → gives you <strong>{stop.kmNeeded?.toFixed(0)} km</strong> range for the next leg
+      Charge to <strong>80%</strong> → gives <strong>{stop.kmNeeded?.toFixed(0)} km</strong> range for next leg
     </div>
   </div>
 );
+
+// ── Address Input with live suggestions ─────────────────────────────────────
+const AddressInput = ({ label, value, onChange, onCoordsFound, placeholder }) => {
+  const [suggestions, setSuggestions] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const debounce = useRef(null);
+
+  const handleChange = (e) => {
+    const val = e.target.value;
+    onChange(val);
+    clearTimeout(debounce.current);
+    if (val.length < 3) { setSuggestions([]); return; }
+    debounce.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const q = encodeURIComponent(val + ', India');
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=5&addressdetails=1`,
+          { headers: { 'Accept-Language': 'en', 'User-Agent': 'InFlux-EV-App' } });
+        const data = await res.json();
+        setSuggestions(data);
+      } catch { setSuggestions([]); }
+      finally { setSearching(false); }
+    }, 500);
+  };
+
+  const select = (item) => {
+    onChange(item.display_name.split(',')[0]);
+    onCoordsFound([parseFloat(item.lon), parseFloat(item.lat)]);
+    setSuggestions([]);
+  };
+
+  return (
+    <div className="relative">
+      <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+      <div className="relative">
+        <input value={value} onChange={handleChange} placeholder={placeholder}
+          className="w-full px-4 py-2 pr-9 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" />
+        {searching && <div className="absolute right-3 top-2.5 w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />}
+      </div>
+      {suggestions.length > 0 && (
+        <ul className="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+          {suggestions.map((s, i) => (
+            <li key={i} onClick={() => select(s)}
+              className="px-4 py-2 text-sm text-gray-700 hover:bg-green-50 cursor-pointer border-b border-gray-100 last:border-0">
+              <span className="font-medium">{s.display_name.split(',')[0]}</span>
+              <span className="text-xs text-gray-400 ml-1">{s.display_name.split(',').slice(1, 3).join(',')}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
 
 // ── Main Component ───────────────────────────────────────────────────────────
 const RoutePlanner = () => {
@@ -141,31 +247,16 @@ const RoutePlanner = () => {
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [routeData, setRouteData] = useState(null);
+  const [localStops, setLocalStops] = useState([]);
+  const [routeCoords, setRouteCoords] = useState(null);
+  const [distanceKm, setDistanceKm] = useState(null);
+  const [durationSecs, setDurationSecs] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({ minPowerKw: '', amenities: [], providers: [] });
   const [mapInteractive, setMapInteractive] = useState(false);
   const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-
-  useEffect(() => {
-    if (!mapInteractive || !isTouchDevice) return;
-    const timer = setTimeout(() => setMapInteractive(false), 10000);
-    return () => clearTimeout(timer);
-  }, [mapInteractive, isTouchDevice]);
-
-  useEffect(() => {
-    const onVehiclesUpdated = (e) => {
-      const updated = e?.detail || JSON.parse(localStorage.getItem('influx_vehicles') || '[]');
-      setVehicles(updated);
-      if (!selectedVehicleId && updated[0]) {
-        setSelectedVehicleId(updated[0]._id);
-        setSelectedVehicle(updated[0]);
-      }
-    };
-    window.addEventListener('vehiclesUpdated', onVehiclesUpdated);
-    return () => window.removeEventListener('vehiclesUpdated', onVehiclesUpdated);
-  }, []);
 
   useEffect(() => { loadVehicles(); }, [user]);
 
@@ -175,93 +266,106 @@ const RoutePlanner = () => {
       const data = res?.data?.data || [];
       if (data.length) {
         setVehicles(data);
-        setSelectedVehicleId((prev) => prev || data[0]._id);
+        setSelectedVehicleId(data[0]._id);
         setSelectedVehicle(data[0]);
       }
-    } catch (err) {
-      console.warn('Vehicle fetch error:', err.message);
-    }
+    } catch (err) { console.warn('Vehicle fetch error:', err.message); }
   };
 
   const handleVehicleChange = (id) => {
     setSelectedVehicleId(id);
-    setSelectedVehicle(vehicles.find((v) => v._id === id) || null);
-    setRouteData(null);
-  };
-
-  const geocodeAddress = async (address) => {
-    const cityCoords = {
-      pune: [73.8567, 18.5204],
-      mumbai: [72.8777, 19.076],
-      delhi: [77.1025, 28.7041],
-      bangalore: [77.5946, 12.9716],
-      bengaluru: [77.5946, 12.9716],
-      nashik: [73.7898, 19.9975],
-      aurangabad: [75.3433, 19.8762],
-      nagpur: [79.0882, 21.1458],
-      surat: [72.8311, 21.1702],
-      ahmedabad: [72.5714, 23.0225],
-      hyderabad: [78.4867, 17.385],
-      chennai: [80.2707, 13.0827],
-    };
-    const found = Object.entries(cityCoords).find(([city]) => address.toLowerCase().includes(city));
-    return found ? found[1] : [73.8567, 18.5204];
-  };
-
-  const handleStartChange = async (v) => {
-    setStart(v);
-    if (v.length > 3) setStartCoords(await geocodeAddress(v));
-  };
-
-  const handleEndChange = async (v) => {
-    setEnd(v);
-    if (v.length > 3) setEndCoords(await geocodeAddress(v));
+    const v = vehicles.find((v) => v._id === id) || null;
+    setSelectedVehicle(v);
+    setRouteData(null); setRouteCoords(null); setDistanceKm(null);
   };
 
   const handleSearch = async () => {
-    if (vehicles.length === 0) return setError('Please add a vehicle first before planning a route.');
-    if (!start || !end || !selectedVehicleId) {
-      return setError('Please fill in Start, Destination and select a Vehicle.');
-    }
-    if (!startCoords || !endCoords) return setError('Could not find those cities. Try using city names like Pune, Mumbai, Delhi.');
+    if (vehicles.length === 0) return setError('Please add a vehicle first.');
+    if (!start || !end) return setError('Please enter Start and Destination.');
+    if (!selectedVehicleId) return setError('Please select a vehicle.');
 
     setLoading(true);
     setError(null);
+    setRouteData(null);
+    setRouteCoords(null);
 
     try {
-      const response = await routeService.searchRoute({
-        start: startCoords,
-        end: endCoords,
-        vehicleId: selectedVehicleId,
-        filters,
-      });
-      response.success ? setRouteData(response.data) : setError(response.message || 'Route planning failed');
+      // Step 1: Geocode if not already done
+      let sCoords = startCoords;
+      let eCoords = endCoords;
+      if (!sCoords) { sCoords = await geocodeWithNominatim(start); setStartCoords(sCoords); }
+      if (!eCoords) { eCoords = await geocodeWithNominatim(end); setEndCoords(eCoords); }
+
+      if (!sCoords || !eCoords) {
+        setLoading(false);
+        return setError(`Could not find "${!sCoords ? start : end}". Try a more specific name like "Goa, India" or "Dispur, Assam".`);
+      }
+
+      // Step 2: Get real road route from OSRM
+      const roadRoute = await getRoadRoute(sCoords, eCoords);
+      const coords = roadRoute ? roadRoute.coordinates : [sCoords, eCoords];
+      const km = roadRoute ? roadRoute.distanceKm : haversineKm(sCoords, eCoords);
+      const dur = roadRoute ? roadRoute.durationSecs : (km / 60) * 3600;
+
+      setRouteCoords(coords);
+      setDistanceKm(km);
+      setDurationSecs(dur);
+
+      // Step 3: Calculate local stops
+      const stops = estimateStopsLocal(km, selectedVehicle);
+      setLocalStops(stops);
+
+      // Step 4: Try backend for station recommendations
+      try {
+        const response = await api.post('/routes/search', {
+          start: sCoords, end: eCoords,
+          vehicleId: selectedVehicleId, filters,
+        });
+        if (response.data.success) {
+          // Merge backend stop data with our road route
+          const bd = response.data.data;
+          setRouteData({
+            ...bd,
+            route: { ...bd.route, coordinates: coords, distanceKm: km, durationSecs: dur },
+            summary: { ...bd.summary, totalDistanceKm: km, driveTimeMinutes: Math.round(dur / 60) },
+          });
+        } else {
+          // Use local calculation only
+          setRouteData(buildLocalRouteData(sCoords, eCoords, coords, km, dur, stops, selectedVehicle));
+        }
+      } catch {
+        setRouteData(buildLocalRouteData(sCoords, eCoords, coords, km, dur, stops, selectedVehicle));
+      }
     } catch (err) {
-      setError(err?.response?.data?.message || 'Route planning failed. Please try again.');
+      setError('Route planning failed: ' + (err.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
   };
 
+  const buildLocalRouteData = (s, e, coords, km, dur, stops, vehicle) => ({
+    route: { start: s, end: e, coordinates: coords, distanceKm: km, durationSecs: dur },
+    vehicle,
+    stops: stops.map(st => ({ ...st, station: null, chargeTimeMinutes: 30, costRupees: 0 })),
+    summary: {
+      totalStops: stops.length, totalDistanceKm: km,
+      driveTimeMinutes: Math.round(dur / 60),
+      totalChargeTimeMinutes: stops.length * 30,
+      totalCostRupees: 0,
+    },
+    allStations: [],
+    useMock: true,
+  });
+
   const toggleFilter = (type, value) => {
-    setFilters((prev) => ({
+    setFilters(prev => ({
       ...prev,
-      [type]: prev[type].includes(value) ? prev[type].filter((x) => x !== value) : [...prev[type], value],
+      [type]: prev[type].includes(value) ? prev[type].filter(x => x !== value) : [...prev[type], value],
     }));
   };
 
-  const mapBounds = (() => {
-    const coords = routeData?.route?.coordinates;
-    if (!coords?.length) return { center: [18.5204, 73.8567], zoom: 6 };
-    const lats = coords.map((c) => c[1]);
-    const lngs = coords.map((c) => c[0]);
-    return {
-      center: [(Math.min(...lats) + Math.max(...lats)) / 2, (Math.min(...lngs) + Math.max(...lngs)) / 2],
-      zoom: 8,
-    };
-  })();
-
-  const interactionEnabled = isTouchDevice ? mapInteractive : true;
+  const displayVehicle = routeData?.vehicle || selectedVehicle;
+  const displayDistance = routeData?.summary?.totalDistanceKm || distanceKm;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-white">
@@ -273,44 +377,23 @@ const RoutePlanner = () => {
         {/* Input Panel */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Start</label>
-              <input
-                value={start}
-                onChange={(e) => handleStartChange(e.target.value)}
-                placeholder="e.g., Pune"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Destination</label>
-              <input
-                value={end}
-                onChange={(e) => handleEndChange(e.target.value)}
-                placeholder="e.g., Mumbai"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-              />
-            </div>
+            <AddressInput label="Start" value={start} onChange={setStart}
+              onCoordsFound={setStartCoords} placeholder="e.g., Pune, Goa, Chennai" />
+            <AddressInput label="Destination" value={end} onChange={setEnd}
+              onCoordsFound={setEndCoords} placeholder="e.g., Mumbai, Assam, Delhi" />
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle</label>
               {vehicles.length === 0 ? (
                 <div className="w-full px-4 py-2 border-2 border-dashed border-yellow-400 rounded-lg bg-yellow-50 text-center">
                   <p className="text-sm text-yellow-700 font-medium mb-1">No vehicles added yet</p>
-                  <a href="/vehicles/add" className="text-sm text-green-600 font-semibold underline hover:text-green-800">
-                    + Add a Vehicle first
-                  </a>
+                  <a href="/vehicles/add" className="text-sm text-green-600 font-semibold underline hover:text-green-800">+ Add a Vehicle first</a>
                 </div>
               ) : (
-                <select
-                  value={selectedVehicleId}
-                  onChange={(e) => handleVehicleChange(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                >
+                <select value={selectedVehicleId} onChange={(e) => handleVehicleChange(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
                   <option value="">-- Select vehicle --</option>
                   {vehicles.map((v) => (
-                    <option key={v._id} value={v._id}>
-                      {v.name} — {v.range} km range ({v.currentChargePercent}% charged)
-                    </option>
+                    <option key={v._id} value={v._id}>{v.name} — {v.range} km range ({v.currentChargePercent}% charged)</option>
                   ))}
                 </select>
               )}
@@ -324,11 +407,11 @@ const RoutePlanner = () => {
               <span className="text-gray-600">Full range: <strong>{selectedVehicle.range} km</strong></span>
               <span className="text-gray-600">Battery: <strong>{selectedVehicle.batteryCapacity} kWh</strong></span>
               <span className="text-gray-600">Current charge: <strong>{selectedVehicle.currentChargePercent}%</strong></span>
-              <span className="text-green-600 font-semibold">Effective range now: {(selectedVehicle.range * selectedVehicle.currentChargePercent / 100).toFixed(0)} km</span>
+              <span className="text-green-600 font-semibold">Effective now: {(selectedVehicle.range * selectedVehicle.currentChargePercent / 100).toFixed(0)} km</span>
             </div>
           )}
 
-          <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-2 text-sm text-green-600 hover:text-green-700 mb-4">
+          <button onClick={() => setShowFilters(s => !s)} className="flex items-center gap-2 text-sm text-green-600 hover:text-green-700 mb-4">
             <FaFilter /> {showFilters ? 'Hide' : 'Show'} Filters
           </button>
 
@@ -337,33 +420,26 @@ const RoutePlanner = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Min Power (kW)</label>
-                  <input
-                    type="number"
-                    value={filters.minPowerKw}
+                  <input type="number" value={filters.minPowerKw}
                     onChange={(e) => setFilters({ ...filters, minPowerKw: e.target.value })}
                     placeholder="e.g., 50"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                  />
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Amenities</label>
                   <div className="flex flex-wrap gap-2">
-                    {['Restroom', 'Cafe', 'Parking', 'WiFi', 'ATM', 'Restaurant'].map((a) => (
+                    {['Restroom','Cafe','Parking','WiFi','ATM','Restaurant'].map(a => (
                       <button key={a} onClick={() => toggleFilter('amenities', a)}
-                        className={`px-3 py-1 text-xs rounded-full ${filters.amenities.includes(a) ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}>
-                        {a}
-                      </button>
+                        className={`px-3 py-1 text-xs rounded-full ${filters.amenities.includes(a) ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}>{a}</button>
                     ))}
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Providers</label>
                   <div className="flex flex-wrap gap-2">
-                    {['Tata Power', 'ChargePoint', 'Ather Grid', 'Zeon Charging'].map((p) => (
+                    {['Tata Power','ChargePoint','Ather Grid','Zeon Charging'].map(p => (
                       <button key={p} onClick={() => toggleFilter('providers', p)}
-                        className={`px-3 py-1 text-xs rounded-full ${filters.providers.includes(p) ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}>
-                        {p}
-                      </button>
+                        className={`px-3 py-1 text-xs rounded-full ${filters.providers.includes(p) ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}>{p}</button>
                     ))}
                   </div>
                 </div>
@@ -373,35 +449,23 @@ const RoutePlanner = () => {
 
           <button onClick={handleSearch} disabled={loading}
             className="w-full md:w-auto px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 flex items-center justify-center gap-2">
-            {loading ? (
-              <><div className="animate-spin h-4 w-4 border-b-2 border-white rounded-full" /> Planning Route...</>
-            ) : (
-              <><FaRoute /> Plan Route</>
-            )}
+            {loading
+              ? <><div className="animate-spin h-4 w-4 border-b-2 border-white rounded-full" /> Planning Route...</>
+              : <><FaRoute /> Plan Route</>}
           </button>
 
-          {error && <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">{error}</div>}
+          {error && <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">{error}</div>}
         </div>
 
-        {/* Range bar — shown as soon as vehicle + destination are selected */}
-        {selectedVehicle && endCoords && startCoords && !routeData && (
-          <RangeBar
-            vehicle={selectedVehicle}
-            distanceKm={(() => {
-              const R = 6371;
-              const dLat = ((endCoords[1] - startCoords[1]) * Math.PI) / 180;
-              const dLon = ((endCoords[0] - startCoords[0]) * Math.PI) / 180;
-              const a = Math.sin(dLat/2)**2 + Math.cos(startCoords[1]*Math.PI/180)*Math.cos(endCoords[1]*Math.PI/180)*Math.sin(dLon/2)**2;
-              return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            })()}
-          />
+        {/* Range bar preview */}
+        {selectedVehicle && startCoords && endCoords && !routeData && (
+          <RangeBar vehicle={selectedVehicle} distanceKm={haversineKm(startCoords, endCoords)} />
         )}
 
         {/* Results */}
         {routeData && (
           <>
-            {/* Range analysis bar with real distance */}
-            <RangeBar vehicle={routeData.vehicle} distanceKm={routeData.summary.totalDistanceKm} />
+            <RangeBar vehicle={displayVehicle} distanceKm={displayDistance} />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Map */}
@@ -409,49 +473,72 @@ const RoutePlanner = () => {
                 <div className="bg-white rounded-lg shadow-lg overflow-hidden relative">
                   {isTouchDevice && (
                     <div className="absolute top-2 right-2 z-[1000]">
-                      <button onClick={() => setMapInteractive((s) => !s)}
+                      <button onClick={() => setMapInteractive(s => !s)}
                         className={`px-3 py-2 rounded-md text-sm font-medium shadow ${mapInteractive ? 'bg-red-600 text-white' : 'bg-white text-gray-800'}`}>
                         {mapInteractive ? 'Disable Map' : 'Enable Map'}
                       </button>
                     </div>
                   )}
-                  <MapContainer center={mapBounds.center} zoom={mapBounds.zoom} style={{ height: '400px', width: '100%' }}
-                    dragging={interactionEnabled} touchZoom={interactionEnabled} doubleClickZoom={interactionEnabled}
+                  <MapContainer center={[20.5937, 78.9629]} zoom={5}
+                    style={{ height: '420px', width: '100%' }}
+                    dragging={isTouchDevice ? mapInteractive : true}
+                    touchZoom={isTouchDevice ? mapInteractive : true}
                     scrollWheelZoom={false} zoomControl={true}>
-                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' />
-                    {routeData.route.coordinates && (
-                      <Polyline positions={routeData.route.coordinates.map((c) => [c[1], c[0]])} color="#10b981" weight={4} opacity={0.7} />
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    />
+                    {routeData.route.coordinates && routeData.route.coordinates.length > 1 && (
+                      <>
+                        <FitBounds coords={routeData.route.coordinates} />
+                        <Polyline
+                          positions={routeData.route.coordinates.map(c => [c[1], c[0]])}
+                          color="#10b981" weight={5} opacity={0.85}
+                        />
+                      </>
                     )}
                     {routeData.route.start && (
                       <Marker position={[routeData.route.start[1], routeData.route.start[0]]}>
-                        <Popup>🚗 Start: {start}</Popup>
+                        <Popup><strong>🚗 Start:</strong> {start}</Popup>
                       </Marker>
                     )}
                     {routeData.route.end && (
                       <Marker position={[routeData.route.end[1], routeData.route.end[0]]}>
-                        <Popup>🏁 Destination: {end}</Popup>
+                        <Popup><strong>🏁 Destination:</strong> {end}</Popup>
                       </Marker>
                     )}
-                    {routeData.allStations?.map((st) => (
-                      <Marker key={st._id} position={[st.location.coordinates[1], st.location.coordinates[0]]} icon={createChargingIcon()}>
+                    {routeData.stops?.filter(s => s.station?.location).map((stop, i) => (
+                      <Marker key={i}
+                        position={[stop.station.location.coordinates[1], stop.station.location.coordinates[0]]}
+                        icon={createStopIcon(i + 1)}>
                         <Popup>
-                          <div className="p-2">
-                            <h3 className="font-bold text-green-600">{st.name}</h3>
-                            <p className="text-sm text-gray-600">{st.address}</p>
-                            <p className="text-sm"><strong>Provider:</strong> {st.provider}</p>
-                            <p className="text-sm"><strong>Power:</strong> {st.powerRating || 'N/A'} kW</p>
-                          </div>
+                          <strong>Stop {i+1}:</strong> {stop.station.name}<br/>
+                          ⚡ {stop.station.powerRating || 50} kW · ~{stop.chargeTimeMinutes} min · ₹{stop.costRupees}
+                        </Popup>
+                      </Marker>
+                    ))}
+                    {routeData.allStations?.map((st) => (
+                      <Marker key={st._id}
+                        position={[st.location.coordinates[1], st.location.coordinates[0]]}
+                        icon={createChargingIcon()}>
+                        <Popup>
+                          <strong className="text-green-600">{st.name}</strong><br/>
+                          {st.address}<br/>
+                          ⚡ {st.powerRating || 'N/A'} kW · {st.provider}
                         </Popup>
                       </Marker>
                     ))}
                   </MapContainer>
                 </div>
+                {routeData.useMock && (
+                  <p className="text-xs text-gray-400 mt-2 text-center">
+                    🗺️ Route shown via OSRM (real roads). Station data from your database.
+                  </p>
+                )}
               </div>
 
               {/* Summary + Stops */}
               <div className="space-y-4">
-                {/* Route Summary */}
                 <div className="bg-white rounded-lg shadow-lg p-6">
                   <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                     <FaRoute className="text-green-600" /> Route Summary
@@ -478,21 +565,18 @@ const RoutePlanner = () => {
                       </div>
                     )}
                     <div className="flex justify-between border-t pt-2">
-                      <span className="flex items-center gap-1"><FaRupeeSign /> Total Cost:</span>
+                      <span className="flex items-center gap-1"><FaRupeeSign /> Est. Cost:</span>
                       <span className="font-bold text-green-600">₹{routeData.summary.totalCostRupees}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Charging Stops Detail */}
-                {routeData.stops && routeData.stops.length > 0 && (
+                {routeData.stops?.length > 0 && (
                   <div className="space-y-3">
                     <h3 className="font-bold text-gray-800 flex items-center gap-2">
                       <FaChargingStation className="text-yellow-500" /> Charging Stops
                     </h3>
-                    {routeData.stops.map((stop, i) => (
-                      <StopCard key={i} stop={stop} index={i} />
-                    ))}
+                    {routeData.stops.map((stop, i) => <StopCard key={i} stop={stop} index={i} />)}
                   </div>
                 )}
 
@@ -500,10 +584,12 @@ const RoutePlanner = () => {
                   <div className="bg-green-50 border border-green-300 rounded-lg p-4 text-center">
                     <p className="text-green-700 font-semibold text-lg">✅ No charging needed!</p>
                     <p className="text-green-600 text-sm mt-1">
-                      Your {routeData.vehicle.name} can reach {end} on its current charge of {routeData.vehicle.currentChargePercent}%.
+                      {displayVehicle?.name} can reach {end} on {displayVehicle?.currentChargePercent}% charge.
                     </p>
                     <p className="text-gray-500 text-xs mt-1">
-                      Remaining range after trip: ~{Math.max(0, (routeData.vehicle.range * routeData.vehicle.currentChargePercent / 100) - routeData.summary.totalDistanceKm).toFixed(0)} km
+                      Remaining range after trip: ~{Math.max(0,
+                        (displayVehicle?.range * displayVehicle?.currentChargePercent / 100) - routeData.summary.totalDistanceKm
+                      ).toFixed(0)} km
                     </p>
                   </div>
                 )}
