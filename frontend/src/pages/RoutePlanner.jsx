@@ -124,7 +124,10 @@ const RoutePlanner = () => {
   };
 
   const handleSearch = async () => {
-    if (!start || !end || !selectedVehicleId) return setError('Please fill in all required fields');
+    if (!start || !end || !selectedVehicleId) {
+      if (vehicles.length === 0) return setError('No vehicle found. Please add a vehicle first from the Dashboard.');
+      return setError('Please fill in all required fields including selecting a vehicle.');
+    }
     if (!startCoords || !endCoords) return setError('Could not geocode addresses. Try using city names.');
 
     setLoading(true);
@@ -195,18 +198,30 @@ const RoutePlanner = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle</label>
-              <select
-                value={selectedVehicleId}
-                onChange={(e) => setSelectedVehicleId(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-              >
-                <option value="">-- Select vehicle --</option>
-                {vehicles.map((v) => (
-                  <option key={v._id} value={v._id}>
-                    {v.name} ({v.currentChargePercent}%)
-                  </option>
-                ))}
-              </select>
+              {vehicles.length === 0 ? (
+                <div className="w-full px-4 py-2 border-2 border-dashed border-yellow-400 rounded-lg bg-yellow-50 text-center">
+                  <p className="text-sm text-yellow-700 font-medium mb-1">No vehicles added yet</p>
+                  <a
+                    href="/vehicles/add"
+                    className="text-sm text-green-600 font-semibold underline hover:text-green-800"
+                  >
+                    + Add a Vehicle first
+                  </a>
+                </div>
+              ) : (
+                <select
+                  value={selectedVehicleId}
+                  onChange={(e) => setSelectedVehicleId(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">-- Select vehicle --</option>
+                  {vehicles.map((v) => (
+                    <option key={v._id} value={v._id}>
+                      {v.name} ({v.currentChargePercent}%)
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 
