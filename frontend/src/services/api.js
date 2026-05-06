@@ -11,7 +11,7 @@ const getApiUrl = () => {
   // Get current hostname (localhost or network IP)
   const hostname = window.location.hostname;
   const protocol = window.location.protocol;
-  const backendPort = 5000;
+  const backendPort = 10000;
   
   // If accessing via localhost, use localhost for API
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
@@ -83,6 +83,3 @@ api.interceptors.response.use(
 );
 
 export default api;
-
-
-
