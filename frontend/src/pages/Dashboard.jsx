@@ -329,50 +329,77 @@ const Dashboard = () => {
             {/* Vehicle Tab */}
             {activeTab === 'vehicle' && (
               <div>
-                <h3 className="text-lg font-semibold mb-4">My Vehicle</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">My Vehicles</h3>
+                  <button
+                    onClick={() => navigate('/vehicles/add')}
+                    className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                  >
+                    <span className="text-lg leading-none">+</span> Add Vehicle
+                  </button>
+                </div>
                 <div className="card-content">
-                  {vehicle ? (
-                    <div className="bg-white border border-gray-200 rounded-lg p-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <p className="text-gray-500 text-sm mb-1">Vehicle Model</p>
-                          <p className="text-xl font-semibold">{vehicle.model || vehicle.name || 'Not specified'}</p>
+                  {vehicles.length > 0 ? (
+                    <div className="space-y-4">
+                      {vehicles.map((v, idx) => (
+                        <div key={v._id || idx} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-bold text-sm">
+                                EV
+                              </div>
+                              <div>
+                                <p className="font-semibold text-gray-800 text-lg">{v.name || v.model || 'My Vehicle'}</p>
+                                {idx === 0 && (
+                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Primary</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                              <p className="text-gray-400 text-xs mb-1">Battery</p>
+                              <p className="font-semibold text-gray-800">{v.batteryCapacity || 'N/A'} kWh</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-400 text-xs mb-1">Full Range</p>
+                              <p className="font-semibold text-gray-800">{v.range || 'N/A'} km</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-400 text-xs mb-1">Current Charge</p>
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                  <div
+                                    className="bg-green-500 h-2 rounded-full transition-all"
+                                    style={{ width: `${v.currentChargePercent || 0}%` }}
+                                  />
+                                </div>
+                                <span className="text-sm font-semibold text-green-600">{v.currentChargePercent || 0}%</span>
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-gray-400 text-xs mb-1">Connector</p>
+                              <p className="font-semibold text-gray-800">{v.connectorType || 'N/A'}</p>
+                            </div>
+                          </div>
+                          {v.licensePlate && (
+                            <div className="mt-3 pt-3 border-t border-gray-100">
+                              <p className="text-gray-400 text-xs mb-1">License Plate</p>
+                              <p className="font-semibold text-gray-800">{v.licensePlate}</p>
+                            </div>
+                          )}
                         </div>
-                        <div>
-                          <p className="text-gray-500 text-sm mb-1">Battery Capacity</p>
-                          <p className="text-xl font-semibold">{vehicle.batteryCapacity || 'N/A'} kWh</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 text-sm mb-1">Connector Type</p>
-                          <p className="text-xl font-semibold">{vehicle.connectorType || 'N/A'}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 text-sm mb-1">License Plate</p>
-                          <p className="text-xl font-semibold">{vehicle.licensePlate || 'Not registered'}</p>
-                        </div>
-                      </div>
-                      <div className="mt-4 flex items-center gap-3">
-                        <button className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
-                          Edit Vehicle Details
-                        </button>
-                        {vehicles.length > 1 && (
-                          <button
-                            onClick={() => navigate('/vehicles')}
-                            className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
-                          >
-                            View all vehicles ({vehicles.length})
-                          </button>
-                        )}
-                      </div>
+                      ))}
                     </div>
                   ) : (
                     <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
-                      <p className="text-gray-500 mb-4">No vehicle information added yet</p>
+                      <p className="text-gray-500 mb-2 text-lg">No vehicles added yet</p>
+                      <p className="text-gray-400 text-sm mb-6">Add your EV to start planning routes</p>
                       <button
                         onClick={() => navigate('/vehicles/add')}
                         className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
                       >
-                        Add Vehicle
+                        + Add Your First Vehicle
                       </button>
                     </div>
                   )}
