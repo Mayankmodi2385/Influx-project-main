@@ -329,3 +329,81 @@ a {
     font-size: 13px;
   }
 }
+
+/* ======================================================
+   PWA + RESPONSIVE FIXES
+   ====================================================== */
+
+/* iPhone safe area for bottom nav */
+.influx-bottom-nav {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+}
+
+/* Prevent overscroll bounce on iOS */
+html {
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* iOS standalone mode top padding */
+@media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
+  }
+  header, nav {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* ── Tablet (iPad) fixes ── */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .map-wrapper {
+    height: 55vh;
+  }
+  .dashboard-tabs .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .tab-row {
+    overflow-x: visible;
+  }
+}
+
+/* ── Small phones (< 380px) ── */
+@media (max-width: 380px) {
+  .influx-bottom-nav span {
+    font-size: 0.65rem;
+  }
+  .influx-bottom-nav svg {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; }
+}
+
+/* ── Landscape phone fix ── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .map-wrapper {
+    height: 80vw;
+    max-height: 320px;
+  }
+  .influx-bottom-nav {
+    display: none;
+  }
+}
+
+/* ── Touch targets ── */
+button, a, [role="button"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Text inputs on iOS — prevent zoom on focus */
+input, select, textarea {
+  font-size: 16px !important;
+}
+
+/* Prevent layout shift from scrollbar appearing */
+html {
+  scrollbar-gutter: stable;
+}
