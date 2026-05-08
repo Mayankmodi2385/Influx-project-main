@@ -5,7 +5,9 @@ import axios from 'axios';
 // Otherwise use localhost or environment variable
 const getApiUrl = () => {
   if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+    // Ensure URL always ends with /api
+    const url = import.meta.env.VITE_API_URL;
+    return url.endsWith('/api') ? url : url.replace(/\/+$/, '') + '/api';
   }
   
   // Get current hostname (localhost or network IP)
