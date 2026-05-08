@@ -58,14 +58,3 @@ export const stationService = {
     return response.data;
   },
 };
-
-
-
-
-
-
-
-
-
-
-
