@@ -10,18 +10,15 @@
     "test": "cd backend && npm test && cd ../frontend && npm test",
     "lint": "cd backend && npm run lint && cd ../frontend && npm run lint"
   },
-  "keywords": ["ev", "charging", "stations", "full-stack"],
+  "keywords": [
+    "ev",
+    "charging",
+    "stations",
+    "full-stack"
+  ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "passport-google-oauth": "^2.0.0"
+  }
 }
-
-
-
-
-
-
-
-
-
-
-
