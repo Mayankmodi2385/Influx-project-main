@@ -368,14 +368,93 @@ const RoutePlanner = () => {
   const displayDistance = routeData?.summary?.totalDistanceKm || distanceKm;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white">
-      <div className="container mx-auto px-4 py-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-          <FaRoute className="text-green-600" /> Route Planner
-        </h1>
+    <div
+  style={{
+    minHeight: '100vh',
+    background: '#f0fdf8',
+    paddingBottom: '40px',
+  }}
+>
+      <div
+  style={{
+    maxWidth: '1200px',
+    margin: '-40px auto 0',
+    padding: '0 16px',
+    position: 'relative',
+    zIndex: 10,
+  }}
+>
+        {/* HEADER */}
+<div
+  style={{
+    background:
+      'linear-gradient(135deg, #064e3b 0%, #065f46 55%, #047857 100%)',
+    padding: '32px 24px 70px',
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: '0 0 24px 24px',
+  }}
+>
+  <div
+    style={{
+      position: 'absolute',
+      top: -50,
+      right: -50,
+      width: 200,
+      height: 200,
+      background: 'rgba(255,255,255,0.05)',
+      borderRadius: '50%',
+    }}
+  />
+
+  <div
+    style={{
+      position: 'absolute',
+      bottom: -30,
+      left: 60,
+      width: 140,
+      height: 140,
+      background: 'rgba(16,185,129,0.1)',
+      borderRadius: '50%',
+    }}
+  />
+
+  <div style={{ position: 'relative', zIndex: 1 }}>
+    <h1
+      style={{
+        color: '#fff',
+        fontSize: '2rem',
+        fontWeight: 800,
+        marginBottom: '8px',
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+      }}
+    >
+      ⚡ Route Planner
+    </h1>
+
+    <p
+      style={{
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: '0.95rem',
+      }}
+    >
+      Smart EV trip planning with charging stops
+    </p>
+  </div>
+</div>
 
         {/* Input Panel */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+
+<div
+  style={{
+    background: '#fff',
+    borderRadius: '22px',
+    padding: '28px',
+    border: '1.5px solid #d1fae5',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.06)',
+    marginBottom: '24px',
+  }}
+>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <AddressInput label="Start" value={start} onChange={setStart}
               onCoordsFound={setStartCoords} placeholder="e.g., Pune, Goa, Chennai" />
@@ -402,7 +481,20 @@ const RoutePlanner = () => {
 
           {/* Vehicle info strip */}
           {selectedVehicle && (
-            <div className="flex flex-wrap gap-4 text-xs bg-green-50 rounded-lg p-3 mb-4 border border-green-200">
+            <div
+  style={{
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '18px',
+    padding: '16px',
+    marginBottom: '20px',
+    borderRadius: '16px',
+    background: 'rgba(16,185,129,0.08)',
+    border: '1px solid rgba(16,185,129,0.15)',
+    backdropFilter: 'blur(12px)',
+    fontSize: '0.8rem',
+  }}
+>
               <span className="flex items-center gap-1 text-green-700"><FaCar /> <strong>{selectedVehicle.name}</strong></span>
               <span className="text-gray-600">Full range: <strong>{selectedVehicle.range} km</strong></span>
               <span className="text-gray-600">Battery: <strong>{selectedVehicle.batteryCapacity} kWh</strong></span>
@@ -447,12 +539,48 @@ const RoutePlanner = () => {
             </div>
           )}
 
-          <button onClick={handleSearch} disabled={loading}
-            className="w-full md:w-auto px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 flex items-center justify-center gap-2">
-            {loading
-              ? <><div className="animate-spin h-4 w-4 border-b-2 border-white rounded-full" /> Planning Route...</>
-              : <><FaRoute /> Plan Route</>}
-          </button>
+         <button
+  onClick={handleSearch}
+  disabled={loading}
+  style={{
+    background: 'linear-gradient(135deg,#10b981,#059669)',
+    color: '#fff',
+    border: 'none',
+    padding: '14px 28px',
+    borderRadius: '14px',
+    fontWeight: 700,
+    fontSize: '0.95rem',
+    cursor: loading ? 'not-allowed' : 'pointer',
+    boxShadow: '0 6px 18px rgba(16,185,129,0.35)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '10px',
+    opacity: loading ? 0.7 : 1,
+    transition: 'all 0.2s ease',
+  }}
+>
+  {loading ? (
+    <>
+      <div
+        className="animate-spin"
+        style={{
+          width: '16px',
+          height: '16px',
+          border: '2px solid rgba(255,255,255,0.4)',
+          borderTopColor: '#fff',
+          borderRadius: '50%',
+        }}
+      />
+      Planning Route...
+    </>
+  ) : (
+    <>
+      <FaRoute />
+      Plan Route
+    </>
+  )}
+</button>
 
           {error && <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">{error}</div>}
         </div>
@@ -470,7 +598,16 @@ const RoutePlanner = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Map */}
               <div className="lg:col-span-2">
-                <div className="bg-white rounded-lg shadow-lg overflow-hidden relative">
+                <div
+  style={{
+    background: '#fff',
+    borderRadius: '22px',
+    overflow: 'hidden',
+    border: '1.5px solid #d1fae5',
+    boxShadow: '0 6px 20px rgba(0,0,0,0.06)',
+    position: 'relative',
+  }}
+>
                   {isTouchDevice && (
                     <div className="absolute top-2 right-2 z-[1000]">
                       <button onClick={() => setMapInteractive(s => !s)}
@@ -539,7 +676,15 @@ const RoutePlanner = () => {
 
               {/* Summary + Stops */}
               <div className="space-y-4">
-                <div className="bg-white rounded-lg shadow-lg p-6">
+                <div
+  style={{
+    background: '#fff',
+    borderRadius: '20px',
+    padding: '24px',
+    border: '1.5px solid #d1fae5',
+    boxShadow: '0 4px 18px rgba(0,0,0,0.05)',
+  }}
+>
                   <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                     <FaRoute className="text-green-600" /> Route Summary
                   </h2>
