@@ -49,7 +49,7 @@ const NavigationDrawer = ({ isOpen, onClose }) => {
           position: 'fixed', inset: 0,
           background: 'rgba(0,0,0,0.55)',
           backdropFilter: 'blur(2px)',
-          zIndex: 40,
+          zIndex: 99999,
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? 'auto' : 'none',
           transition: 'opacity 0.28s ease',
@@ -58,18 +58,24 @@ const NavigationDrawer = ({ isOpen, onClose }) => {
 
       {/* Drawer — slides in from left */}
       <div
-        style={{
-          position: 'fixed', left: 0, top: 0, bottom: 0,
-          width: '72%', maxWidth: 300,
-          background: 'linear-gradient(160deg, #ecfdf5 0%, #d1fae5 100%)',
-          zIndex: 50,
-          transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
-          transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
-          display: 'flex', flexDirection: 'column',
-          boxShadow: isOpen ? '4px 0 32px rgba(0,0,0,0.18)' : 'none',
-          isolation: 'isolate',
-        }}
-      >
+  className="navigation-drawer"
+  style={{
+    position: 'fixed',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: '72%',
+    maxWidth: 300,
+    background: 'linear-gradient(160deg, #ecfdf5 0%, #d1fae5 100%)',
+    zIndex: 99999,
+    transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
+    transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: isOpen ? '4px 0 32px rgba(0,0,0,0.18)' : 'none',
+    isolation: 'isolate',
+  }}
+>
         {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',

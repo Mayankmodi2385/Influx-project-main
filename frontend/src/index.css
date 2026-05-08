@@ -517,3 +517,32 @@ button, a, input, select, textarea, .influx-card {
     transform        0.15s ease,
     opacity          0.15s ease;
 }
+/* =========================================
+   LEAFLET MAP FIX
+   Prevent map from overlapping mobile drawer
+========================================= */
+
+.leaflet-container {
+  z-index: 1 !important;
+}
+
+.leaflet-pane {
+  z-index: 1 !important;
+}
+
+.leaflet-top,
+.leaflet-bottom,
+.leaflet-control {
+  z-index: 2 !important;
+}
+
+/* Drawer should always stay above */
+.mobile-drawer,
+.navigation-drawer {
+  z-index: 99999 !important;
+}
+
+/* Prevent weird touch overlap */
+.leaflet-control-container {
+  pointer-events: auto;
+}
