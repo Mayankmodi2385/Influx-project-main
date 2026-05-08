@@ -272,12 +272,20 @@ const RoutePlanner = () => {
     } catch (err) { console.warn('Vehicle fetch error:', err.message); }
   };
 
+  const [currentChargeOverride, setCurrentChargeOverride] = React.useState(null);
+
   const handleVehicleChange = (id) => {
     setSelectedVehicleId(id);
-    const v = vehicles.find((v) => v._id === id) || null;
+    const v = vehicles.find((veh) => veh._id === id) || null;
     setSelectedVehicle(v);
+    setCurrentChargeOverride(v ? (v.currentChargePercent ?? 80) : null);
     setRouteData(null); setRouteCoords(null); setDistanceKm(null);
   };
+
+  // Use overridden charge for calculations
+  const activeVehicle = selectedVehicle
+    ? { ...selectedVehicle, currentChargePercent: currentChargeOverride ?? selectedVehicle.currentChargePercent ?? 80 }
+    : null;
 
   const handleSearch = async () => {
     if (vehicles.length === 0) return setError('Please add a vehicle first.');
@@ -312,7 +320,7 @@ const RoutePlanner = () => {
       setDurationSecs(dur);
 
       // Step 3: Calculate local stops
-      const stops = estimateStopsLocal(km, selectedVehicle);
+      const stops = estimateStopsLocal(km, activeVehicle || selectedVehicle);
       setLocalStops(stops);
 
       // Step 4: Try backend for station recommendations
@@ -331,10 +339,10 @@ const RoutePlanner = () => {
           });
         } else {
           // Use local calculation only
-          setRouteData(buildLocalRouteData(sCoords, eCoords, coords, km, dur, stops, selectedVehicle));
+          setRouteData(buildLocalRouteData(sCoords, eCoords, coords, km, dur, stops, activeVehicle || selectedVehicle));
         }
       } catch {
-        setRouteData(buildLocalRouteData(sCoords, eCoords, coords, km, dur, stops, selectedVehicle));
+        setRouteData(buildLocalRouteData(sCoords, eCoords, coords, km, dur, stops, activeVehicle || selectedVehicle));
       }
     } catch (err) {
       setError('Route planning failed: ' + (err.message || 'Unknown error'));
@@ -479,27 +487,55 @@ const RoutePlanner = () => {
             </div>
           </div>
 
-          {/* Vehicle info strip */}
-          {selectedVehicle && (
-            <div
-  style={{
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '18px',
-    padding: '16px',
-    marginBottom: '20px',
-    borderRadius: '16px',
-    background: 'rgba(16,185,129,0.08)',
-    border: '1px solid rgba(16,185,129,0.15)',
-    backdropFilter: 'blur(12px)',
-    fontSize: '0.8rem',
-  }}
->
-              <span className="flex items-center gap-1 text-green-700"><FaCar /> <strong>{selectedVehicle.name}</strong></span>
-              <span className="text-gray-600">Full range: <strong>{selectedVehicle.range} km</strong></span>
-              <span className="text-gray-600">Battery: <strong>{selectedVehicle.batteryCapacity} kWh</strong></span>
-              <span className="text-gray-600">Current charge: <strong>{selectedVehicle.currentChargePercent}%</strong></span>
-              <span className="text-green-600 font-semibold">Effective now: {(selectedVehicle.range * selectedVehicle.currentChargePercent / 100).toFixed(0)} km</span>
+          {/* Vehicle info strip with live charge override */}
+          {selectedVehicle && activeVehicle && (
+            <div style={{
+              padding: '16px',
+              marginBottom: '20px',
+              borderRadius: '16px',
+              background: 'rgba(16,185,129,0.08)',
+              border: '1px solid rgba(16,185,129,0.2)',
+              fontSize: '0.82rem',
+            }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '14px', alignItems: 'center' }}>
+                <span className="flex items-center gap-1 text-green-700"><FaCar /> <strong>{selectedVehicle.name}</strong></span>
+                <span className="text-gray-600">Full range: <strong>{selectedVehicle.range} km</strong></span>
+                <span className="text-gray-600">Battery: <strong>{selectedVehicle.batteryCapacity} kWh</strong></span>
+                <span style={{ background: '#d1fae5', color: '#065f46', padding: '2px 10px', borderRadius: 20, fontWeight: 700 }}>
+                  ⚡ Effective now: {(activeVehicle.range * activeVehicle.currentChargePercent / 100).toFixed(0)} km
+                </span>
+              </div>
+
+              {/* Live charge slider */}
+              <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(16,185,129,0.15)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <label style={{ fontWeight: 700, fontSize: '0.8rem', color: '#065f46' }}>
+                    🔋 Current Battery Charge
+                  </label>
+                  <span style={{
+                    fontWeight: 800, fontSize: '1.1rem',
+                    color: activeVehicle.currentChargePercent >= 70 ? '#10b981' : activeVehicle.currentChargePercent >= 30 ? '#f59e0b' : '#ef4444'
+                  }}>
+                    {activeVehicle.currentChargePercent}%
+                  </span>
+                </div>
+                <input
+                  type="range" min="1" max="100" step="1"
+                  value={activeVehicle.currentChargePercent}
+                  onChange={(e) => setCurrentChargeOverride(parseInt(e.target.value))}
+                  style={{
+                    width: '100%',
+                    accentColor: activeVehicle.currentChargePercent >= 70 ? '#10b981' : activeVehicle.currentChargePercent >= 30 ? '#f59e0b' : '#ef4444',
+                    height: 6, cursor: 'pointer',
+                  }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: '#94a3b8', marginTop: 4 }}>
+                  <span>⚠️ Low</span><span>↔ Mid</span><span>✅ Good</span>
+                </div>
+                {activeVehicle.currentChargePercent < 20 && (
+                  <p style={{ margin: '8px 0 0', fontSize: '0.75rem', color: '#ef4444', fontWeight: 600 }}>⚠️ Very low charge! Route may require more charging stops.</p>
+                )}
+              </div>
             </div>
           )}
 
