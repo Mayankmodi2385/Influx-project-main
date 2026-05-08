@@ -33,8 +33,8 @@
 html {
   overflow-x: hidden;
   scroll-behavior: smooth;
+  /* scrollbar-gutter removed — not supported in all linters */
   -webkit-overflow-scrolling: touch;
-  scrollbar-gutter: stable;
 }
 
 body {
@@ -76,13 +76,13 @@ body {
 
 .influx-auth-card {
   background: rgba(255,255,255,0.97);
+  -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   border-radius: var(--radius-lg);
   padding: 2rem;
   box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.15);
 }
 
-/* Logo ring */
 .influx-logo-ring {
   width: 64px; height: 64px;
   background: linear-gradient(135deg, var(--brand-green), var(--brand-green-dark));
@@ -104,7 +104,6 @@ body {
   font-weight: 400;
 }
 
-/* Feature pills */
 .influx-feature-pill {
   background: var(--brand-green-light);
   color: var(--brand-green-dark);
@@ -115,7 +114,9 @@ body {
   letter-spacing: 0.01em;
 }
 
-/* Buttons */
+/* ======================================================
+   BUTTONS
+   ====================================================== */
 .influx-btn-primary {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   background: linear-gradient(135deg, var(--brand-green), var(--brand-green-dark));
@@ -127,11 +128,13 @@ body {
   border: none;
   cursor: pointer;
   box-shadow: var(--shadow-green);
-  transition: all 0.2s ease;
   text-decoration: none;
   min-height: 48px;
 }
-.influx-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(16,185,129,.40); }
+.influx-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(16,185,129,.40);
+}
 .influx-btn-primary:active { transform: translateY(0); }
 .influx-btn-primary:disabled { opacity: 0.6; transform: none; cursor: not-allowed; }
 
@@ -145,11 +148,13 @@ body {
   border-radius: var(--radius-md);
   border: 2px solid rgba(255,255,255,0.6);
   cursor: pointer;
-  transition: all 0.2s ease;
   text-decoration: none;
   min-height: 48px;
 }
-.influx-btn-outline:hover { background: rgba(255,255,255,0.12); border-color: white; }
+.influx-btn-outline:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: white;
+}
 
 .influx-btn-google {
   display: flex; align-items: center; justify-content: center; gap: 10px;
@@ -161,14 +166,20 @@ body {
   border-radius: var(--radius-md);
   border: 1.5px solid var(--border);
   cursor: pointer;
-  transition: all 0.2s ease;
   box-shadow: var(--shadow-sm);
   min-height: 48px;
 }
-.influx-btn-google:hover { background: #f8fafc; border-color: #cbd5e1; box-shadow: var(--shadow-md); }
+.influx-btn-google:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  box-shadow: var(--shadow-md);
+}
 
-/* Form fields */
+/* ======================================================
+   FORM FIELDS
+   ====================================================== */
 .influx-field { display: flex; flex-direction: column; }
+
 .influx-label {
   font-size: 0.8125rem;
   font-weight: 600;
@@ -176,15 +187,15 @@ body {
   margin-bottom: 6px;
   letter-spacing: 0.01em;
 }
+
 .influx-input {
   width: 100%;
   padding: 0.7rem 1rem;
-  font-size: 0.9375rem !important;
+  font-size: 16px;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
   background: #fafafa;
   color: var(--text-primary);
-  transition: all 0.2s ease;
   outline: none;
   min-height: 48px;
 }
@@ -195,7 +206,9 @@ body {
 }
 .influx-input::placeholder { color: var(--text-muted); }
 
-/* Divider */
+/* ======================================================
+   DIVIDER
+   ====================================================== */
 .influx-divider {
   display: flex; align-items: center; gap: 12px;
   color: var(--text-muted); font-size: 0.8125rem;
@@ -204,10 +217,13 @@ body {
   content: ''; flex: 1; height: 1px; background: var(--border);
 }
 
-/* Alerts */
+/* ======================================================
+   ALERTS
+   ====================================================== */
 .influx-alert-error {
   display: flex; align-items: flex-start; gap: 8px;
-  background: #fef2f2; border: 1px solid #fecaca;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
   color: #dc2626;
   padding: 10px 14px;
   border-radius: var(--radius-sm);
@@ -215,22 +231,25 @@ body {
   font-weight: 500;
 }
 
-/* Spinner */
+/* ======================================================
+   SPINNER
+   ====================================================== */
 .influx-spinner {
   display: inline-block;
   width: 16px; height: 16px;
   border: 2.5px solid rgba(255,255,255,0.3);
   border-top-color: white;
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+  animation: influx-spin 0.7s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes influx-spin { to { transform: rotate(360deg); } }
 
 /* ======================================================
    NAVIGATION
    ====================================================== */
 nav.influx-nav {
   background: rgba(255,255,255,0.95);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
@@ -238,14 +257,13 @@ nav.influx-nav {
 }
 
 /* ======================================================
-   CARDS + SURFACES
+   CARDS
    ====================================================== */
 .influx-card {
   background: white;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.2s ease;
 }
 .influx-card:hover { box-shadow: var(--shadow-md); }
 
@@ -257,7 +275,7 @@ nav.influx-nav {
 }
 
 /* ======================================================
-   STATS / METRIC CARDS
+   STAT CARDS
    ====================================================== */
 .influx-stat-card {
   background: white;
@@ -290,7 +308,7 @@ nav.influx-nav {
 }
 
 /* ======================================================
-   BADGES + TAGS
+   BADGES
    ====================================================== */
 .influx-badge {
   display: inline-flex; align-items: center;
@@ -299,25 +317,24 @@ nav.influx-nav {
   border-radius: 20px;
   letter-spacing: 0.02em;
 }
-.influx-badge-green { background: #dcfce7; color: #15803d; }
+.influx-badge-green  { background: #dcfce7; color: #15803d; }
 .influx-badge-yellow { background: #fef9c3; color: #a16207; }
-.influx-badge-red { background: #fee2e2; color: #dc2626; }
-.influx-badge-blue { background: #dbeafe; color: #1d4ed8; }
+.influx-badge-red    { background: #fee2e2; color: #dc2626; }
+.influx-badge-blue   { background: #dbeafe; color: #1d4ed8; }
 
 /* ======================================================
-   TABLE / LIST ITEMS
+   LIST ITEMS
    ====================================================== */
 .influx-list-item {
   display: flex; align-items: center; gap: 12px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
-  transition: background 0.15s ease;
 }
 .influx-list-item:last-child { border-bottom: none; }
 .influx-list-item:hover { background: #f8fafc; }
 
 /* ======================================================
-   GRADIENT HEADINGS
+   GRADIENT TEXT
    ====================================================== */
 .influx-gradient-text {
   background: linear-gradient(135deg, var(--brand-green), #0d9488);
@@ -327,19 +344,22 @@ nav.influx-nav {
 }
 
 /* ======================================================
-   BOTTOM NAV (mobile)
+   BOTTOM NAV
    ====================================================== */
 .influx-bottom-nav {
   position: fixed; left: 0; right: 0; bottom: 0;
   display: flex; justify-content: space-around; align-items: center;
-  padding: 0.5rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom));
+  padding: 0.5rem 0.5rem;
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
   background: rgba(255,255,255,0.97);
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border-top: 1px solid var(--border);
   box-shadow: 0 -4px 20px rgba(0,0,0,.06);
   z-index: 10500;
 }
-.influx-bottom-nav button, .influx-bottom-nav a {
+.influx-bottom-nav button,
+.influx-bottom-nav a {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 4px;
   padding: 6px 4px;
@@ -347,12 +367,10 @@ nav.influx-nav {
   color: var(--text-muted);
   background: transparent; border: none;
   text-decoration: none;
-  transition: color 0.15s ease;
   min-height: 44px;
 }
-.influx-bottom-nav button.active, .influx-bottom-nav a.active {
-  color: var(--brand-green);
-}
+.influx-bottom-nav button.active,
+.influx-bottom-nav a.active { color: var(--brand-green); }
 .influx-bottom-nav svg { width: 1.25rem; height: 1.25rem; }
 
 /* ======================================================
@@ -376,6 +394,7 @@ body.influx-drawer-open main { pointer-events: none; }
 .page-dim {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.4);
+  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
   z-index: 10040;
 }
@@ -403,17 +422,21 @@ body.influx-drawer-open main { pointer-events: none; }
    ====================================================== */
 .tab-row {
   display: flex; gap: 0.5rem;
-  overflow-x: auto; -webkit-overflow-scrolling: touch;
-  padding: 0.25rem 0; scrollbar-width: none;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.25rem 0;
+  scrollbar-width: none;
 }
 .tab-row::-webkit-scrollbar { display: none; }
 .tab-row button { flex: 0 0 auto; white-space: nowrap; }
-
 .dashboard-tabs { overflow-y: visible; max-height: none; scroll-behavior: smooth; }
 .card { overflow: visible; }
 .card-content {
-  max-height: 38vh; overflow-y: auto; overflow-x: hidden;
-  -webkit-overflow-scrolling: touch; scrollbar-width: thin;
+  max-height: 38vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 
 /* ======================================================
@@ -425,14 +448,12 @@ body.influx-drawer-open main { pointer-events: none; }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 /* ======================================================
-   GRADIENTS
+   UTILITY CLASSES
    ====================================================== */
-.gradient-green { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+.gradient-green       { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
 .gradient-green-light { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); }
+.safe-bottom          { padding-bottom: env(safe-area-inset-bottom); }
 
-/* ======================================================
-   FAB
-   ====================================================== */
 .fab-group {
   position: fixed; right: 14px; bottom: 20vh;
   display: flex; flex-direction: column; gap: 12px;
@@ -443,18 +464,18 @@ body.influx-drawer-open main { pointer-events: none; }
    RESPONSIVE — TABLET (iPad)
    ====================================================== */
 @media (min-width: 768px) and (max-width: 1024px) {
-  .map-wrapper { height: 55vh; }
+  .map-wrapper  { height: 55vh; }
   .card-content { max-height: 44vh; }
-  .tab-row { overflow-x: visible; }
+  .tab-row      { overflow-x: visible; }
 }
 
 /* ======================================================
    RESPONSIVE — MOBILE
    ====================================================== */
 @media (max-width: 768px) {
-  .map-wrapper { height: 42vh; max-height: 420px; min-height: 240px; }
-  .app-drawer { width: 92%; }
-  .card-content { max-height: 50vh; }
+  .map-wrapper   { height: 42vh; max-height: 420px; min-height: 240px; }
+  .app-drawer    { width: 92%; }
+  .card-content  { max-height: 50vh; }
   .dashboard-tabs > div { min-height: 200px; }
 }
 
@@ -462,36 +483,37 @@ body.influx-drawer-open main { pointer-events: none; }
   .map-container { height: 40vh !important; min-height: 220px; }
 }
 
-/* Small phones */
 @media (max-width: 380px) {
   .influx-bottom-nav span { font-size: 0.65rem; }
-  .influx-bottom-nav svg { width: 1.1rem; height: 1.1rem; }
+  .influx-bottom-nav svg  { width: 1.1rem; height: 1.1rem; }
 }
 
-/* Landscape */
 @media (max-height: 500px) and (orientation: landscape) {
-  .map-wrapper { height: 75vw; max-height: 300px; }
-  .influx-bottom-nav { display: none; }
+  .map-wrapper         { height: 75vw; max-height: 300px; }
+  .influx-bottom-nav   { display: none; }
 }
 
 /* ======================================================
-   PWA / SAFE AREAS
+   PWA STANDALONE MODE
    ====================================================== */
-@media (display-mode: standalone) {
-  body { padding-top: env(safe-area-inset-top); }
+@media all and (display-mode: standalone) {
+  body        { padding-top: env(safe-area-inset-top); }
   header, nav { padding-top: env(safe-area-inset-top); }
 }
-.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
 
 /* ======================================================
-   TOUCH + A11Y
+   TOUCH TARGETS
    ====================================================== */
 button, a, [role="button"] { min-height: 44px; min-width: 44px; }
-input, select, textarea { font-size: 16px !important; }
+input, select, textarea    { font-size: 16px; }
 
-/* Smooth transitions on interactive elements only */
+/* Transitions on interactive elements only */
 button, a, input, select, textarea, .influx-card {
-  transition: background-color 0.15s ease, color 0.15s ease,
-              border-color 0.15s ease, box-shadow 0.15s ease,
-              transform 0.15s ease, opacity 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color            0.15s ease,
+    border-color     0.15s ease,
+    box-shadow       0.15s ease,
+    transform        0.15s ease,
+    opacity          0.15s ease;
 }
