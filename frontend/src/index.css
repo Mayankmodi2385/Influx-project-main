@@ -2,408 +2,496 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(to bottom right, #f0fdf4, #ffffff);
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-
-/* ========== Brand Gradients ========== */
-.gradient-green {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-}
-
-.gradient-green-light {
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-}
-
-/* ========== Custom Charging Icon ========== */
-.custom-charging-icon {
-  background: transparent !important;
-  border: none !important;
-}
-
-/* ========== Smooth Transitions ========== */
-* {
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-/* ========== Custom Scrollbar ========== */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #10b981;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #059669;
+/* ======================================================
+   DESIGN TOKENS
+   ====================================================== */
+:root {
+  --brand-green:       #10b981;
+  --brand-green-dark:  #059669;
+  --brand-green-light: #d1fae5;
+  --brand-green-glow:  rgba(16,185,129,0.25);
+  --surface:           #ffffff;
+  --surface-2:         #f8fafc;
+  --border:            #e2e8f0;
+  --text-primary:      #0f172a;
+  --text-secondary:    #64748b;
+  --text-muted:        #94a3b8;
+  --radius-sm:         8px;
+  --radius-md:         12px;
+  --radius-lg:         20px;
+  --shadow-sm:         0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:         0 4px 16px rgba(0,0,0,.08), 0 2px 6px rgba(0,0,0,.04);
+  --shadow-lg:         0 12px 40px rgba(0,0,0,.10), 0 4px 12px rgba(0,0,0,.06);
+  --shadow-green:      0 4px 20px rgba(16,185,129,.30);
 }
 
 /* ======================================================
-   LAYERING + Z-INDEX FIXES
+   BASE
    ====================================================== */
+*, *::before, *::after { box-sizing: border-box; }
 
-/* Drawer / Side Menu */
-.app-drawer {
-  position: fixed !important;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 85%;
-  max-width: 420px;
-  transform: translateX(-100%);
-  transition: transform 300ms ease;
-  z-index: 10050 !important; /* always above search/header */
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+html {
+  overflow-x: hidden;
+  scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
-.app-drawer.open {
-  transform: translateX(0);
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--surface-2);
+  color: var(--text-primary);
+  line-height: 1.6;
 }
 
-/* Search Bar + Header stay above content but below drawer */
-.app-header,
-.search-bar {
+/* ======================================================
+   AUTH PAGES  (Welcome / Login / Register)
+   ====================================================== */
+.influx-auth-bg {
+  background: linear-gradient(135deg, #0a4d3b 0%, #065f46 40%, #047857 70%, #059669 100%);
   position: relative;
-  z-index: 10010 !important;
+  overflow: hidden;
 }
 
-/* When drawer is open, hide header/search bar to avoid overlap */
-.influx-drawer-open .search-bar {
-  display: none !important;
-}
-
-/* Also prevent interactions with the main content while drawer open */
-body.influx-drawer-open main {
+.influx-bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.25;
   pointer-events: none;
 }
-
-/* Floating Buttons (Wallet / Locate / Vehicle) */
-.fab-group {
-  position: fixed;
-  right: 12px;
-  bottom: 18vh;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  z-index: 10025;
+.influx-bg-orb-1 {
+  width: 360px; height: 360px;
+  background: radial-gradient(circle, #34d399, transparent);
+  top: -80px; right: -80px;
+}
+.influx-bg-orb-2 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, #6ee7b7, transparent);
+  bottom: -60px; left: -60px;
 }
 
-/* Background dim when drawer open */
+.influx-auth-card {
+  background: rgba(255,255,255,0.97);
+  backdrop-filter: blur(20px);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.15);
+}
+
+/* Logo ring */
+.influx-logo-ring {
+  width: 64px; height: 64px;
+  background: linear-gradient(135deg, var(--brand-green), var(--brand-green-dark));
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-green);
+}
+
+.influx-brand-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
+
+.influx-brand-sub {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* Feature pills */
+.influx-feature-pill {
+  background: var(--brand-green-light);
+  color: var(--brand-green-dark);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.01em;
+}
+
+/* Buttons */
+.influx-btn-primary {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: linear-gradient(135deg, var(--brand-green), var(--brand-green-dark));
+  color: white;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-green);
+  transition: all 0.2s ease;
+  text-decoration: none;
+  min-height: 48px;
+}
+.influx-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(16,185,129,.40); }
+.influx-btn-primary:active { transform: translateY(0); }
+.influx-btn-primary:disabled { opacity: 0.6; transform: none; cursor: not-allowed; }
+
+.influx-btn-outline {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: transparent;
+  color: white;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  border: 2px solid rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  min-height: 48px;
+}
+.influx-btn-outline:hover { background: rgba(255,255,255,0.12); border-color: white; }
+
+.influx-btn-google {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: white;
+  color: #1f2937;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.7rem 1.5rem;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  min-height: 48px;
+}
+.influx-btn-google:hover { background: #f8fafc; border-color: #cbd5e1; box-shadow: var(--shadow-md); }
+
+/* Form fields */
+.influx-field { display: flex; flex-direction: column; }
+.influx-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+  letter-spacing: 0.01em;
+}
+.influx-input {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  font-size: 0.9375rem !important;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fafafa;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+  outline: none;
+  min-height: 48px;
+}
+.influx-input:focus {
+  border-color: var(--brand-green);
+  background: white;
+  box-shadow: 0 0 0 3px var(--brand-green-glow);
+}
+.influx-input::placeholder { color: var(--text-muted); }
+
+/* Divider */
+.influx-divider {
+  display: flex; align-items: center; gap: 12px;
+  color: var(--text-muted); font-size: 0.8125rem;
+}
+.influx-divider::before, .influx-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* Alerts */
+.influx-alert-error {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: #fef2f2; border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Spinner */
+.influx-spinner {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2.5px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ======================================================
+   NAVIGATION
+   ====================================================== */
+nav.influx-nav {
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  position: sticky; top: 0; z-index: 100;
+}
+
+/* ======================================================
+   CARDS + SURFACES
+   ====================================================== */
+.influx-card {
+  background: white;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease;
+}
+.influx-card:hover { box-shadow: var(--shadow-md); }
+
+.influx-section-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+/* ======================================================
+   STATS / METRIC CARDS
+   ====================================================== */
+.influx-stat-card {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+.influx-stat-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--brand-green), var(--brand-green-dark));
+}
+.influx-stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+.influx-stat-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 4px;
+}
+
+/* ======================================================
+   BADGES + TAGS
+   ====================================================== */
+.influx-badge {
+  display: inline-flex; align-items: center;
+  font-size: 0.75rem; font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.02em;
+}
+.influx-badge-green { background: #dcfce7; color: #15803d; }
+.influx-badge-yellow { background: #fef9c3; color: #a16207; }
+.influx-badge-red { background: #fee2e2; color: #dc2626; }
+.influx-badge-blue { background: #dbeafe; color: #1d4ed8; }
+
+/* ======================================================
+   TABLE / LIST ITEMS
+   ====================================================== */
+.influx-list-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s ease;
+}
+.influx-list-item:last-child { border-bottom: none; }
+.influx-list-item:hover { background: #f8fafc; }
+
+/* ======================================================
+   GRADIENT HEADINGS
+   ====================================================== */
+.influx-gradient-text {
+  background: linear-gradient(135deg, var(--brand-green), #0d9488);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ======================================================
+   BOTTOM NAV (mobile)
+   ====================================================== */
+.influx-bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  display: flex; justify-content: space-around; align-items: center;
+  padding: 0.5rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom));
+  background: rgba(255,255,255,0.97);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 20px rgba(0,0,0,.06);
+  z-index: 10500;
+}
+.influx-bottom-nav button, .influx-bottom-nav a {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 4px;
+  padding: 6px 4px;
+  font-size: 0.7rem; font-weight: 600;
+  color: var(--text-muted);
+  background: transparent; border: none;
+  text-decoration: none;
+  transition: color 0.15s ease;
+  min-height: 44px;
+}
+.influx-bottom-nav button.active, .influx-bottom-nav a.active {
+  color: var(--brand-green);
+}
+.influx-bottom-nav svg { width: 1.25rem; height: 1.25rem; }
+
+/* ======================================================
+   DRAWER
+   ====================================================== */
+.app-drawer {
+  position: fixed !important; top: 0; left: 0; bottom: 0;
+  width: 85%; max-width: 420px;
+  transform: translateX(-100%);
+  transition: transform 280ms cubic-bezier(0.4,0,0.2,1);
+  z-index: 10050 !important;
+  background: white;
+  box-shadow: var(--shadow-lg);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.app-drawer.open { transform: translateX(0); }
+.app-header, .search-bar { position: relative; z-index: 10010 !important; }
+.influx-drawer-open .search-bar { display: none !important; }
+body.influx-drawer-open main { pointer-events: none; }
 .page-dim {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.25);
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(2px);
   z-index: 10040;
 }
 
-/* Bottom navigation bar for mobile */
-.influx-bottom-nav {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(16, 185, 129, 0.12);
-  box-shadow: 0 -6px 20px rgba(15, 118, 110, 0.12);
-  z-index: 10500;
-}
-
-.influx-bottom-nav button,
-.influx-bottom-nav a {
-  flex: 1 1 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #047857;
-  background: transparent;
-}
-
-.influx-bottom-nav button:focus-visible,
-.influx-bottom-nav a:focus-visible {
-  outline: 2px solid #10b981;
-  outline-offset: 2px;
-}
-
-.influx-bottom-nav svg {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
 /* ======================================================
-   MAP + ROUTE PLANNER FIXES
+   MAP
    ====================================================== */
-
-/* Map Wrapper (around MapContainer) */
 .map-wrapper {
-  height: 60vh;
-  max-height: 600px;
-  min-height: 300px;
-  position: relative;
-  border-radius: 16px;
-  overflow: hidden;
-  z-index: 0;
+  height: 60vh; max-height: 600px; min-height: 300px;
+  position: relative; border-radius: var(--radius-lg);
+  overflow: hidden; z-index: 0;
+  box-shadow: var(--shadow-md);
 }
-
-.map-container {
-  height: 100%;
-  width: 100%;
-  position: relative;
-}
-
-/* Leaflet Map Container */
-.site-map {
-  height: 100% !important;
-  width: 100% !important;
-  border-radius: 16px;
-}
-
-/* Map Interaction Toggle Button */
-.map-interaction-toggle {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  z-index: 10030;
-  pointer-events: auto;
-}
-
-/* Zoom Controls Placement
-   Reduced top margin so zoom is visible without big gaps,
-   and lifted z-index so it sits above markers/popups if necessary.
-*/
-.leaflet-control-zoom {
-  margin-right: 12px;
-  margin-top: 12px; /* reduced to prevent overlap with header */
-  z-index: 10060;   /* ensure it's above most UI but below drawer */
-}
-
-/* Ensure popups + markers render above tile layers but below drawer */
+.map-container { height: 100%; width: 100%; position: relative; }
+.site-map { height: 100% !important; width: 100% !important; }
+.leaflet-control-zoom { margin-right: 12px; margin-top: 12px; z-index: 10060; }
 .leaflet-container .leaflet-popup,
 .leaflet-container .leaflet-marker-pane,
-.leaflet-container .leaflet-shadow-pane {
-  z-index: 10050;
-}
-
-/* Disable pointer events when map interaction is off */
-.site-map.map-disabled {
-  pointer-events: none;
-}
-
-/* If using Mapbox GL, ensure its canvas doesn't steal global scroll on wheel:
-   .mapboxgl-canvas { touch-action: pan-y; } */
+.leaflet-container .leaflet-shadow-pane { z-index: 10050; }
+.map-interaction-toggle { position: absolute; right: 12px; bottom: 12px; z-index: 10030; }
+.custom-charging-icon { background: transparent !important; border: none !important; }
 
 /* ======================================================
-   DASHBOARD TAB FIXES
+   DASHBOARD
    ====================================================== */
-
-/* Horizontal scrollable tabs */
 .tab-row {
-  display: flex;
-  gap: 0.5rem;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 0.25rem 0.5rem;
+  display: flex; gap: 0.5rem;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  padding: 0.25rem 0; scrollbar-width: none;
 }
+.tab-row::-webkit-scrollbar { display: none; }
+.tab-row button { flex: 0 0 auto; white-space: nowrap; }
 
-.tab-row button {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-
-/* Dashboard tab content: keep the page scroll as main scroll
-   and let individual cards handle overflow internally. */
-.dashboard-tabs {
-  overflow-y: visible;   /* allow body/page scroll */
-  max-height: none;
-  scroll-behavior: smooth;
-}
-
-/* Card layout: give inner scrolling to long lists and avoid full-page jumps */
-.card {
-  overflow: visible;
-}
-
-/* When card content could overflow, this lets it scroll internally without shifting page */
+.dashboard-tabs { overflow-y: visible; max-height: none; scroll-behavior: smooth; }
+.card { overflow: visible; }
 .card-content {
-  max-height: 36vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
-}
-
-/* On mobile, allow card-content to scroll more naturally */
-@media (max-width: 768px) {
-  .card-content {
-    max-height: 50vh;
-  }
-  
-  /* Ensure dashboard tabs don't cause page jumps */
-  .dashboard-tabs {
-    min-height: auto;
-  }
-  
-  /* Prevent tab content from causing layout shifts */
-  .dashboard-tabs > div {
-    min-height: 200px;
-  }
+  max-height: 38vh; overflow-y: auto; overflow-x: hidden;
+  -webkit-overflow-scrolling: touch; scrollbar-width: thin;
 }
 
 /* ======================================================
-   MOBILE FIXES
+   SCROLLBAR
+   ====================================================== */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ======================================================
+   GRADIENTS
+   ====================================================== */
+.gradient-green { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+.gradient-green-light { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); }
+
+/* ======================================================
+   FAB
+   ====================================================== */
+.fab-group {
+  position: fixed; right: 14px; bottom: 20vh;
+  display: flex; flex-direction: column; gap: 12px;
+  z-index: 10025;
+}
+
+/* ======================================================
+   RESPONSIVE — TABLET (iPad)
+   ====================================================== */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .map-wrapper { height: 55vh; }
+  .card-content { max-height: 44vh; }
+  .tab-row { overflow-x: visible; }
+}
+
+/* ======================================================
+   RESPONSIVE — MOBILE
    ====================================================== */
 @media (max-width: 768px) {
-  /* Reduce map height */
-  .map-wrapper {
-    height: 42vh;
-    max-height: 420px;
-    min-height: 240px;
-  }
-
-  /* Ensure Leaflet zoom visible */
-  .leaflet-control-zoom {
-    margin-top: 16px;
-    margin-right: 12px;
-  }
-
-  /* Drawer width */
-  .app-drawer {
-    width: 92%;
-    max-width: 420px;
-  }
+  .map-wrapper { height: 42vh; max-height: 420px; min-height: 240px; }
+  .app-drawer { width: 92%; }
+  .card-content { max-height: 50vh; }
+  .dashboard-tabs > div { min-height: 200px; }
 }
 
 @media (max-width: 640px) {
-  .map-container {
-    height: 40vh !important;
-    max-height: 420px;
-    min-height: 220px;
-  }
+  .map-container { height: 40vh !important; min-height: 220px; }
 }
 
-/* Safe bottom padding for iPhones */
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
+/* Small phones */
+@media (max-width: 380px) {
+  .influx-bottom-nav span { font-size: 0.65rem; }
+  .influx-bottom-nav svg { width: 1.1rem; height: 1.1rem; }
 }
 
-/* Prevent UI overlap on small devices */
-button,
-a {
-  z-index: 10005;
-}
-
-/* Compact map-interaction button */
-@media (max-width: 420px) {
-  .map-interaction-toggle button {
-    padding: 8px 10px;
-    font-size: 13px;
-  }
+/* Landscape */
+@media (max-height: 500px) and (orientation: landscape) {
+  .map-wrapper { height: 75vw; max-height: 300px; }
+  .influx-bottom-nav { display: none; }
 }
 
 /* ======================================================
-   PWA + RESPONSIVE FIXES
+   PWA / SAFE AREAS
    ====================================================== */
-
-/* iPhone safe area for bottom nav */
-.influx-bottom-nav {
-  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
-}
-
-/* Prevent overscroll bounce on iOS */
-html {
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* iOS standalone mode top padding */
 @media (display-mode: standalone) {
-  body {
-    padding-top: env(safe-area-inset-top);
-  }
-  header, nav {
-    padding-top: env(safe-area-inset-top);
-  }
+  body { padding-top: env(safe-area-inset-top); }
+  header, nav { padding-top: env(safe-area-inset-top); }
 }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
 
-/* ── Tablet (iPad) fixes ── */
-@media (min-width: 768px) and (max-width: 1024px) {
-  .map-wrapper {
-    height: 55vh;
-  }
-  .dashboard-tabs .grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .tab-row {
-    overflow-x: visible;
-  }
-}
+/* ======================================================
+   TOUCH + A11Y
+   ====================================================== */
+button, a, [role="button"] { min-height: 44px; min-width: 44px; }
+input, select, textarea { font-size: 16px !important; }
 
-/* ── Small phones (< 380px) ── */
-@media (max-width: 380px) {
-  .influx-bottom-nav span {
-    font-size: 0.65rem;
-  }
-  .influx-bottom-nav svg {
-    width: 1.1rem;
-    height: 1.1rem;
-  }
-  h1 { font-size: 1.5rem; }
-  h2 { font-size: 1.25rem; }
-}
-
-/* ── Landscape phone fix ── */
-@media (max-height: 500px) and (orientation: landscape) {
-  .map-wrapper {
-    height: 80vw;
-    max-height: 320px;
-  }
-  .influx-bottom-nav {
-    display: none;
-  }
-}
-
-/* ── Touch targets ── */
-button, a, [role="button"] {
-  min-height: 44px;
-  min-width: 44px;
-}
-
-/* Text inputs on iOS — prevent zoom on focus */
-input, select, textarea {
-  font-size: 16px !important;
-}
-
-/* Prevent layout shift from scrollbar appearing */
-html {
-  scrollbar-gutter: stable;
+/* Smooth transitions on interactive elements only */
+button, a, input, select, textarea, .influx-card {
+  transition: background-color 0.15s ease, color 0.15s ease,
+              border-color 0.15s ease, box-shadow 0.15s ease,
+              transform 0.15s ease, opacity 0.15s ease;
 }
