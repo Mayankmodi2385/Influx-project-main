@@ -30,20 +30,27 @@ const Layout = ({ children }) => {
   return (
     <div className="min-h-screen" style={{ background: '#f0fdf8' }}>
 
-      {/* ── MOBILE HEADER ── */}
+      {/* MOBILE HEADER */}
       <header
-        className="md:hidden sticky top-0 z-30"
-        aria-hidden={drawerOpen}
+        className="md:hidden sticky top-0"
         style={{
           background: 'linear-gradient(135deg, #065f46, #047857)',
           boxShadow: '0 2px 16px rgba(0,0,0,0.18)',
+          zIndex: 30,
+          position: 'sticky',
+          top: 0,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px' }}>
           <button
             onClick={() => setDrawerOpen(true)}
             aria-label="Open navigation"
-            style={{ background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: 10, padding: '8px 10px', cursor: 'pointer', color: '#fff', display: 'flex' }}
+            style={{
+              background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: 10,
+              padding: '8px 10px', cursor: 'pointer', color: '#fff', display: 'flex',
+              position: 'relative', zIndex: 31,
+              WebkitTapHighlightColor: 'transparent',
+            }}
           >
             <FaBars style={{ width: 18, height: 18 }} />
           </button>
@@ -55,10 +62,7 @@ const Layout = ({ children }) => {
             </div>
           </Link>
 
-          <Link
-            to={isAuthenticated ? '/dashboard' : '/login'}
-            style={{ textDecoration: 'none' }}
-          >
+          <Link to={isAuthenticated ? '/dashboard' : '/login'} style={{ textDecoration: 'none' }}>
             {isAuthenticated && user ? (
               <div style={{
                 width: 36, height: 36, borderRadius: '50%',
@@ -78,10 +82,9 @@ const Layout = ({ children }) => {
         </div>
       </header>
 
-      {/* ── DESKTOP HEADER ── */}
+      {/* DESKTOP HEADER */}
       <nav
         className="hidden md:block sticky top-0 z-30"
-        aria-hidden={drawerOpen}
         style={{
           background: 'rgba(255,255,255,0.97)',
           backdropFilter: 'blur(16px)',
@@ -91,8 +94,6 @@ const Layout = ({ children }) => {
       >
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
-
-            {/* Logo + Links */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
               <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ width: 36, height: 36, background: 'linear-gradient(135deg, #10b981, #059669)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 10px rgba(16,185,129,0.35)' }}>
@@ -100,13 +101,10 @@ const Layout = ({ children }) => {
                 </div>
                 <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: '1.25rem', color: '#065f46', letterSpacing: '-0.025em' }}>InFlux</span>
               </Link>
-
               <div style={{ display: 'flex', gap: 4 }}>
                 {navLinks.map(link => (
                   <Link key={link.to} to={link.to} style={{
-                    textDecoration: 'none',
-                    padding: '7px 16px',
-                    borderRadius: 10,
+                    textDecoration: 'none', padding: '7px 16px', borderRadius: 10,
                     fontSize: '0.875rem',
                     fontWeight: isActive(link.to) ? 700 : 500,
                     color: isActive(link.to) ? '#065f46' : '#475569',
@@ -119,8 +117,6 @@ const Layout = ({ children }) => {
                 ))}
               </div>
             </div>
-
-            {/* Auth */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               {isAuthenticated ? (
                 <>
@@ -158,7 +154,8 @@ const Layout = ({ children }) => {
       </nav>
 
       <NavigationDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
-      <main className="flex-1" aria-hidden={drawerOpen}>{children}</main>
+      {/* FIXED: removed aria-hidden={drawerOpen} — it was blocking touch events on mobile */}
+      <main className="flex-1">{children}</main>
     </div>
   );
 };

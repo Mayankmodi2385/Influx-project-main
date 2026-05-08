@@ -197,7 +197,7 @@ const Dashboard = () => {
                 { label: 'Plan a Route', emoji: '🗺️', to: '/route-planner', bg: '#ecfdf5', color: '#065f46' },
                 { label: 'Find Stations', emoji: '⚡', to: '/', bg: '#dbeafe', color: '#1e40af' },
                 { label: 'Add Vehicle', emoji: '🚗', to: '/vehicles/add', bg: '#ede9fe', color: '#6d28d9' },
-                { label: 'Add Station', emoji: '🔌', to: '/stations/add', bg: '#fef9c3', color: '#a16207' },
+                { label: 'Favourites', emoji: '⭐', to: '/dashboard?tab=favorites', bg: '#fef3c7', color: '#92400e' },
               ].map(a => (
                 <Link key={a.label} to={a.to} style={{ textDecoration: 'none', background: a.bg, borderRadius: 14, padding: '16px', display: 'flex', alignItems: 'center', gap: 12, border: '1.5px solid transparent', transition: 'all 0.15s' }}>
                   <span style={{ fontSize: 22 }}>{a.emoji}</span>
