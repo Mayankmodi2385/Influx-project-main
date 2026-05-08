@@ -591,157 +591,275 @@ const RoutePlanner = () => {
         )}
 
         {/* Results */}
-        {routeData && (
-          <>
-            <RangeBar vehicle={displayVehicle} distanceKm={displayDistance} />
+{routeData && (
+  <>
+    <RangeBar vehicle={displayVehicle} distanceKm={displayDistance} />
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Map */}
-              <div className="lg:col-span-2">
-                <div
-  style={{
-    background: '#fff',
-    borderRadius: '22px',
-    overflow: 'hidden',
-    border: '1.5px solid #d1fae5',
-    boxShadow: '0 6px 20px rgba(0,0,0,0.06)',
-    position: 'relative',
-  }}
->
-                  {isTouchDevice && (
-                    <div className="absolute top-2 right-2 z-[1000]">
-                      <button onClick={() => setMapInteractive(s => !s)}
-                        className={`px-3 py-2 rounded-md text-sm font-medium shadow ${mapInteractive ? 'bg-red-600 text-white' : 'bg-white text-gray-800'}`}>
-                        {mapInteractive ? 'Disable Map' : 'Enable Map'}
-                      </button>
-                    </div>
-                  )}
-                  <MapContainer center={[20.5937, 78.9629]} zoom={5}
-                    style={{ height: '420px', width: '100%' }}
-                    dragging={isTouchDevice ? mapInteractive : true}
-                    touchZoom={isTouchDevice ? mapInteractive : true}
-                    scrollWheelZoom={false} zoomControl={true}>
-                    <TileLayer
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    />
-                    {routeData.route.coordinates && routeData.route.coordinates.length > 1 && (
-                      <>
-                        <FitBounds coords={routeData.route.coordinates} />
-                        <Polyline
-                          positions={routeData.route.coordinates.map(c => [c[1], c[0]])}
-                          color="#10b981" weight={5} opacity={0.85}
-                        />
-                      </>
-                    )}
-                    {routeData.route.start && (
-                      <Marker position={[routeData.route.start[1], routeData.route.start[0]]}>
-                        <Popup><strong>🚗 Start:</strong> {start}</Popup>
-                      </Marker>
-                    )}
-                    {routeData.route.end && (
-                      <Marker position={[routeData.route.end[1], routeData.route.end[0]]}>
-                        <Popup><strong>🏁 Destination:</strong> {end}</Popup>
-                      </Marker>
-                    )}
-                    {routeData.stops?.filter(s => s.station?.location).map((stop, i) => (
-                      <Marker key={i}
-                        position={[stop.station.location.coordinates[1], stop.station.location.coordinates[0]]}
-                        icon={createStopIcon(i + 1)}>
-                        <Popup>
-                          <strong>Stop {i+1}:</strong> {stop.station.name}<br/>
-                          ⚡ {stop.station.powerRating || 50} kW · ~{stop.chargeTimeMinutes} min · ₹{stop.costRupees}
-                        </Popup>
-                      </Marker>
-                    ))}
-                    {routeData.allStations?.map((st) => (
-                      <Marker key={st._id}
-                        position={[st.location.coordinates[1], st.location.coordinates[0]]}
-                        icon={createChargingIcon()}>
-                        <Popup>
-                          <strong className="text-green-600">{st.name}</strong><br/>
-                          {st.address}<br/>
-                          ⚡ {st.powerRating || 'N/A'} kW · {st.provider}
-                        </Popup>
-                      </Marker>
-                    ))}
-                  </MapContainer>
-                </div>
-                {routeData.useMock && (
-                  <p className="text-xs text-gray-400 mt-2 text-center">
-                    🗺️ Route shown via OSRM (real roads). Station data from your database.
-                  </p>
-                )}
-              </div>
-
-              {/* Summary + Stops */}
-              <div className="space-y-4">
-                <div
-  style={{
-    background: '#fff',
-    borderRadius: '20px',
-    padding: '24px',
-    border: '1.5px solid #d1fae5',
-    boxShadow: '0 4px 18px rgba(0,0,0,0.05)',
-  }}
->
-                  <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <FaRoute className="text-green-600" /> Route Summary
-                  </h2>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span>Distance:</span>
-                      <span className="font-semibold">{routeService.formatDistance(routeData.summary.totalDistanceKm)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="flex items-center gap-1"><FaClock /> Drive Time:</span>
-                      <span>{routeService.formatDuration(routeData.summary.driveTimeMinutes)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="flex items-center gap-1"><FaBolt /> Charging Stops:</span>
-                      <span className={routeData.summary.totalStops > 0 ? 'text-orange-600 font-bold' : 'text-green-600 font-bold'}>
-                        {routeData.summary.totalStops === 0 ? '✅ None needed' : routeData.summary.totalStops}
-                      </span>
-                    </div>
-                    {routeData.summary.totalChargeTimeMinutes > 0 && (
-                      <div className="flex justify-between">
-                        <span className="flex items-center gap-1"><FaChargingStation /> Charge Time:</span>
-                        <span>{routeService.formatDuration(routeData.summary.totalChargeTimeMinutes)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between border-t pt-2">
-                      <span className="flex items-center gap-1"><FaRupeeSign /> Est. Cost:</span>
-                      <span className="font-bold text-green-600">₹{routeData.summary.totalCostRupees}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {routeData.stops?.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                      <FaChargingStation className="text-yellow-500" /> Charging Stops
-                    </h3>
-                    {routeData.stops.map((stop, i) => <StopCard key={i} stop={stop} index={i} />)}
-                  </div>
-                )}
-
-                {routeData.summary.totalStops === 0 && (
-                  <div className="bg-green-50 border border-green-300 rounded-lg p-4 text-center">
-                    <p className="text-green-700 font-semibold text-lg">✅ No charging needed!</p>
-                    <p className="text-green-600 text-sm mt-1">
-                      {displayVehicle?.name} can reach {end} on {displayVehicle?.currentChargePercent}% charge.
-                    </p>
-                    <p className="text-gray-500 text-xs mt-1">
-                      Remaining range after trip: ~{Math.max(0,
-                        (displayVehicle?.range * displayVehicle?.currentChargePercent / 100) - routeData.summary.totalDistanceKm
-                      ).toFixed(0)} km
-                    </p>
-                  </div>
-                )}
-              </div>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '2fr 1fr',
+        gap: '20px',
+        alignItems: 'start',
+      }}
+    >
+      {/* MAP SECTION */}
+      <div
+        style={{
+          width: '100%',
+          minWidth: 0,
+        }}
+      >
+        <div
+          style={{
+            background: '#fff',
+            borderRadius: '22px',
+            overflow: 'hidden',
+            border: '1.5px solid #d1fae5',
+            boxShadow: '0 6px 20px rgba(0,0,0,0.06)',
+            position: 'relative',
+          }}
+        >
+          {isTouchDevice && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 12,
+                right: 12,
+                zIndex: 1000,
+              }}
+            >
+              <button
+                onClick={() => setMapInteractive(s => !s)}
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: mapInteractive ? '#dc2626' : '#fff',
+                  color: mapInteractive ? '#fff' : '#111827',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
+                }}
+              >
+                {mapInteractive ? 'Disable Map' : 'Enable Map'}
+              </button>
             </div>
-          </>
+          )}
+
+          <MapContainer
+            center={[20.5937, 78.9629]}
+            zoom={5}
+            style={{
+              height: window.innerWidth < 768 ? '300px' : '500px',
+              width: '100%',
+            }}
+            dragging={isTouchDevice ? mapInteractive : true}
+            touchZoom={isTouchDevice ? mapInteractive : true}
+            scrollWheelZoom={false}
+            zoomControl={true}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; OpenStreetMap contributors'
+            />
+
+            {routeData.route.coordinates &&
+              routeData.route.coordinates.length > 1 && (
+                <>
+                  <FitBounds coords={routeData.route.coordinates} />
+
+                  <Polyline
+                    positions={routeData.route.coordinates.map(c => [
+                      c[1],
+                      c[0],
+                    ])}
+                    color="#10b981"
+                    weight={5}
+                    opacity={0.85}
+                  />
+                </>
+              )}
+
+            {routeData.route.start && (
+              <Marker
+                position={[
+                  routeData.route.start[1],
+                  routeData.route.start[0],
+                ]}
+              >
+                <Popup>
+                  <strong>🚗 Start:</strong> {start}
+                </Popup>
+              </Marker>
+            )}
+
+            {routeData.route.end && (
+              <Marker
+                position={[
+                  routeData.route.end[1],
+                  routeData.route.end[0],
+                ]}
+              >
+                <Popup>
+                  <strong>🏁 Destination:</strong> {end}
+                </Popup>
+              </Marker>
+            )}
+
+            {routeData.stops
+              ?.filter(s => s.station?.location)
+              .map((stop, i) => (
+                <Marker
+                  key={i}
+                  position={[
+                    stop.station.location.coordinates[1],
+                    stop.station.location.coordinates[0],
+                  ]}
+                  icon={createStopIcon(i + 1)}
+                >
+                  <Popup>
+                    <strong>Stop {i + 1}:</strong> {stop.station.name}
+                  </Popup>
+                </Marker>
+              ))}
+
+            {routeData.allStations?.map(st => (
+              <Marker
+                key={st._id}
+                position={[
+                  st.location.coordinates[1],
+                  st.location.coordinates[0],
+                ]}
+                icon={createChargingIcon()}
+              >
+                <Popup>
+                  <strong>{st.name}</strong>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+        </div>
+
+        <p
+          style={{
+            fontSize: '12px',
+            color: '#94a3b8',
+            marginTop: '10px',
+            textAlign: 'center',
+          }}
+        >
+          🗺️ Route powered by OpenStreetMap + OSRM
+        </p>
+      </div>
+
+      {/* RIGHT PANEL */}
+      <div
+        style={{
+          width: '100%',
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+        }}
+      >
+        {/* SUMMARY CARD */}
+        <div
+          style={{
+            background: '#fff',
+            borderRadius: '20px',
+            padding: '24px',
+            border: '1.5px solid #d1fae5',
+            boxShadow: '0 4px 18px rgba(0,0,0,0.05)',
+          }}
+        >
+          <h2
+            style={{
+              fontSize: '1.2rem',
+              fontWeight: 800,
+              marginBottom: '18px',
+              color: '#111827',
+            }}
+          >
+            ⚡ Route Summary
+          </h2>
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px',
+            }}
+          >
+            <div className="flex justify-between">
+              <span>Distance</span>
+              <strong>
+                {routeService.formatDistance(
+                  routeData.summary.totalDistanceKm
+                )}
+              </strong>
+            </div>
+
+            <div className="flex justify-between">
+              <span>Drive Time</span>
+              <strong>
+                {routeService.formatDuration(
+                  routeData.summary.driveTimeMinutes
+                )}
+              </strong>
+            </div>
+
+            <div className="flex justify-between">
+              <span>Charging Stops</span>
+
+              <strong
+                style={{
+                  color:
+                    routeData.summary.totalStops > 0
+                      ? '#ea580c'
+                      : '#16a34a',
+                }}
+              >
+                {routeData.summary.totalStops === 0
+                  ? 'None'
+                  : routeData.summary.totalStops}
+              </strong>
+            </div>
+
+            <div
+              style={{
+                borderTop: '1px solid #e5e7eb',
+                paddingTop: '14px',
+              }}
+              className="flex justify-between"
+            >
+              <span>Estimated Cost</span>
+
+              <strong style={{ color: '#059669' }}>
+                ₹{routeData.summary.totalCostRupees}
+              </strong>
+            </div>
+          </div>
+        </div>
+
+        {/* STOPS */}
+        {routeData.stops?.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}
+          >
+            {routeData.stops.map((stop, i) => (
+              <StopCard key={i} stop={stop} index={i} />
+            ))}
+          </div>
         )}
+      </div>
+    </div>
+  </>
+)}
       </div>
     </div>
   );
