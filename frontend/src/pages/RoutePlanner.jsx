@@ -92,12 +92,14 @@ const haversineKm = (a, b) => {
 // ── Estimate charging stops from vehicle + distance ─────────────────────────
 const estimateStopsLocal = (distanceKm, vehicle) => {
   const stops = [];
-  const effectiveRange = vehicle.range * (vehicle.currentChargePercent / 100);
-  if (distanceKm <= effectiveRange) return stops;
+  // First leg uses CURRENT charge, not full range
+  const firstLegRange = vehicle.range * ((vehicle.currentChargePercent ?? 100) / 100);
+  if (distanceKm <= firstLegRange) return stops;
 
-  let remaining = distanceKm - effectiveRange;
-  let fromStart = effectiveRange;
+  // After each charging stop, car charges to 80%
   const perStop = vehicle.range * 0.8;
+  let fromStart = firstLegRange;   // first stop position = end of current charge
+  let remaining = distanceKm - firstLegRange;
   let num = 1;
   while (remaining > 0) {
     stops.push({ num, distanceFromStart: Math.round(fromStart), kmNeeded: Math.min(remaining, perStop) });
@@ -126,6 +128,7 @@ const RangeBar = ({ vehicle, distanceKm }) => {
           style={{ width: `${Math.min(100, (effectiveRange / distanceKm) * 100)}%` }} />
         {stops.map((s, i) => {
           const left = (s.distanceFromStart / distanceKm) * 100;
+          // Each charging leg goes from this stop to next (vehicle.range * 0.8), capped at destination
           const segEnd = Math.min(s.distanceFromStart + vehicle.range * 0.8, distanceKm);
           const w = ((segEnd - s.distanceFromStart) / distanceKm) * 100;
           return (
