@@ -271,6 +271,7 @@ const RoutePlanner = () => {
         setVehicles(data);
         setSelectedVehicleId(data[0]._id);
         setSelectedVehicle(data[0]);
+        setCurrentChargeOverride(data[0].currentChargePercent ?? 80);
       }
     } catch (err) { console.warn('Vehicle fetch error:', err.message); }
   };
@@ -626,13 +627,13 @@ const RoutePlanner = () => {
 
         {/* Range bar preview */}
         {selectedVehicle && startCoords && endCoords && !routeData && (
-          <RangeBar vehicle={selectedVehicle} distanceKm={haversineKm(startCoords, endCoords)} />
+          <RangeBar vehicle={activeVehicle || selectedVehicle} distanceKm={haversineKm(startCoords, endCoords)} />
         )}
 
         {/* Results */}
 {routeData && (
   <>
-    <RangeBar vehicle={displayVehicle} distanceKm={displayDistance} />
+    <RangeBar vehicle={activeVehicle || displayVehicle} distanceKm={displayDistance} />
 
     <div
       style={{
