@@ -98,7 +98,7 @@ const Login = () => {
 
         {GOOGLE_CLIENT_ID
           ? <GoogleLoginButton onSuccess={async (t) => { await loginWithGoogle(t); navigate('/'); }} onError={setError} />
-          : <div className="influx-btn-google w-full opacity-50 cursor-not-allowed justify-center">Google login not configured</div>
+          : <div className="influx-btn-google w-full opacity-50 cursor-not-allowed justify-center">login With Google</div>
         }
 
         <p className="text-center text-sm text-gray-500 mt-6">
